@@ -40,11 +40,7 @@ export default function SignIn() {
     } catch (error) {
       setLoading(false);
       setError(error.message);
-      
     }
-    
-    
-
   };
   
   return (
