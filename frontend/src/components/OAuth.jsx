@@ -21,17 +21,24 @@ export default function OAuth() {
                 body: JSON.stringify({
                     name: result.user.displayName,
                     email: result.user.email,
-                    photo: result.user.photoURL,
+                    avatar: result.user.photoURL,
                 }),
             })
             const data = await response.json();
+            console.log("Google auth response:", data);
             dispatch(signInSuccess(data));
             navigate('/');
         } catch (error) {
-            console.error('could not sign in with google', error);
+    if (error.code === 'auth/user-cancelled') {
+      alert('Sign-in cancelled. Please try again.');
+    } else {
+      console.error('Could not sign in with Google:', error);
+      alert('Something went wrong with Google Sign-In.');
                 }
+            }
     };                  
   return (
     <button onClick={handleGoogleClick} type='button' className='bg-red-700 text-white p-3 rounded-lg uppercase hover:opacity-95'>Continue with Google</button>
   )
-}
+
+};
