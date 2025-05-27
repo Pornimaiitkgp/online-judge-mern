@@ -30,7 +30,12 @@ export const signin = async(req, res,next) => {
      } catch (error) {
         next(error);
     }
-}
+};
+
+export const signOutUser = (req, res) => {
+  res.clearCookie('access_token'); // if you're using cookies
+  res.status(200).json({ success: true, message: 'Signed out successfully' });
+};
 
 export const google = async (req, res, next) => {
     try {

@@ -1,25 +1,38 @@
-import User from '../models/user.model.js';
 import bcryptjs from 'bcryptjs';
+import User from '../models/user.model.js';
+import { errorHandler } from '../utils/error.js';
 
-export const updateUser = async (req, res) => {
+export const test = (req, res) => {
+  res.json({
+    message: 'Api route is working!',
+  });
+};
+
+export const updateUser = async (req, res, next) => {
+  if (req.user.id !== req.params.id)
+    return next(errorHandler(401, 'You can only update your own account!'));
   try {
-    // Hash password if it's included
     if (req.body.password) {
-      const salt = bcryptjs.genSaltSync(10);
-      req.body.password = bcryptjs.hashSync(req.body.password, salt);
+      req.body.password = bcryptjs.hashSync(req.body.password, 10);
     }
 
     const updatedUser = await User.findByIdAndUpdate(
       req.params.id,
       {
-        $set: req.body,
+        $set: {
+          username: req.body.username,
+          email: req.body.email,
+          password: req.body.password,
+          avatar: req.body.avatar,
+        },
       },
       { new: true }
     );
 
-    const { password, ...rest } = updatedUser._doc; // Exclude password from response
+    const { password, ...rest } = updatedUser._doc;
+
     res.status(200).json(rest);
-  } catch (err) {
-    res.status(500).json({ message: 'Update failed', error: err.message });
+  } catch (error) {
+    next(error);
   }
 };
