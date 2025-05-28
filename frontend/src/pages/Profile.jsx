@@ -15,6 +15,9 @@ import {
   deleteUserFailure,
   deleteUserStart,
   deleteUserSuccess,
+  signOutUserStart,
+  signOutUserFailure,
+  signOutUserSuccess
 } from '../redux/user/userSlice';
 import { useDispatch } from 'react-redux';
 export default function Profile() {
@@ -104,6 +107,30 @@ export default function Profile() {
       dispatch(deleteUserFailure(error.message));
     }
   };
+
+  const handleSignOut = async () => {
+  try {
+    dispatch(signOutUserStart());
+
+    const res = await fetch('/api/auth/signout', {
+      method: 'POST', // IMPORTANT: Your backend expects POST
+      credentials: 'include', // Ensures cookies are sent
+    });
+
+    const data = await res.json();
+
+    if (!res.ok || data.success === false) {
+      dispatch(signOutUserFailure(data.message || 'Sign out failed'));
+      return;
+    }
+
+    dispatch(signOutUserSuccess());
+    navigate('/signin');
+  } catch (error) {
+    dispatch(signOutUserFailure(error.message || 'Something went wrong'));
+  }
+};
+
   return (
     <div className='p-3 max-w-lg mx-auto'>
       <h1 className='text-3xl font-semibold text-center my-7'>Profile</h1>
@@ -170,7 +197,7 @@ export default function Profile() {
         >
           Delete account
         </span>
-        <span className='text-red-700 cursor-pointer'>Sign out</span>
+         <span onClick={handleSignOut} className='text-red-700 cursor-pointer'>Sign out</span>
       </div>
       <p className='text-red-700 mt-5'>{error ? error : ''}</p>
       <p className='text-green-700 mt-5'>
