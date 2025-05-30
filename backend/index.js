@@ -4,8 +4,8 @@ import dotenv from 'dotenv';
 import userRouter from './routes/user.route.js';
 import authRouter from './routes/auth.route.js';
 import cookieParser from 'cookie-parser';
-import authRoutes from './routes/auth.route.js'; // Notice the .js extension!
-import problemRoutes from './routes/problemRoutes.js'; // Notice the .js extension!
+import authRoutes from './routes/auth.route.js'; 
+import problemRoutes from './routes/problemRoutes.js'; 
 
 dotenv.config();
 

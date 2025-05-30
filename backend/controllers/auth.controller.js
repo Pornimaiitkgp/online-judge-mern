@@ -26,7 +26,9 @@ export const signin = async(req, res,next) => {
         if (!ValidUserPassword) return next(errorHandler(400, 'Wrong Credentials'));
         const token = jwt.sign({ id: ValidUser._id }, process.env.JWT_SECRET);
         const {password: pass, ...rest}= ValidUser._doc; // Exclude password from the response
-        res.cookie('access_token', token, {httpOnly: true}).status(200).json({ token, ...rest });
+        
+        // Frontend's SignIn.jsx expects { user: rest, token } for email/password as well
+        res.cookie('access_token', token, {httpOnly: true}).status(200).json({ user: rest, token }); 
      } catch (error) {
         next(error);
     }
@@ -39,35 +41,32 @@ export const signOutUser = (req, res) => {
 
 export const google = async (req, res, next) => {
     try {
-            console.log('Google Signin Req Body:', req.body); // 👈 Add this
+        console.log('Google Signin Req Body:', req.body);
 
         const user = await User.findOne({email: req.body.email});
         if(user){
             const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET);
             const {password: pass, ...rest} = user._doc; // Exclude password from the response  
-            res.cookie('access_token', token, {httpOnly: true}).status(200).json(rest);
-
+            
+            // *** FIX HERE: Send both 'user' and 'token' in the JSON response ***
+            res.cookie('access_token', token, {httpOnly: true}).status(200).json({ user: rest, token }); 
         }
         else{
-            const generatedPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8) ; // Generate a random password
+            const generatedPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8) ;
             const hashedPassword = bcryptjs.hashSync(generatedPassword, 10);
             const newUser = new User({
-        username:
-          req.body.name.split(' ').join('').toLowerCase() +
-          Math.random().toString(36).slice(-4),
-        email: req.body.email,
-        password: hashedPassword,
-        avatar: req.body.avatar,
-      });
-
+                username: req.body.name.split(' ').join('').toLowerCase() + Math.random().toString(36).slice(-4),
+                email: req.body.email,
+                password: hashedPassword,
+                avatar: req.body.avatar,
+            });
           
             await newUser.save();
             const token = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET);
             const {password: pass, ...rest} = newUser._doc; // Exclude password from the response
-            res
-        .cookie('access_token', token, { httpOnly: true })
-        .status(200)
-        .json(rest);
+            
+            // *** FIX HERE: Send both 'user' and 'token' in the JSON response ***
+            res.cookie('access_token', token, { httpOnly: true }).status(200).json({ user: rest, token });
         }
     }catch(error){
          next(error);
@@ -82,4 +81,3 @@ export const signOut = async (req, res, next) => {
     next(error);
   }
 };
-

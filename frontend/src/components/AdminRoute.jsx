@@ -6,11 +6,9 @@ import { Outlet, Navigate } from "react-router-dom";
 export default function AdminRoute() {
   const { currentUser } = useSelector((state) => state.user);
 
-  // --- ADD THESE CONSOLE LOGS ---
   console.log("AdminRoute rendered:");
   console.log("currentUser:", currentUser);
   console.log("currentUser && currentUser.isAdmin:", currentUser && currentUser.isAdmin);
-  // --- END CONSOLE LOGS ---
 
   if (currentUser && currentUser.isAdmin) {
     console.log("AdminRoute: Access GRANTED - rendering Outlet."); // Log for success

@@ -4,9 +4,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { signInStart, signInSuccess, signInFailure } from '../redux/user/userSlice';
 import axios from 'axios';
 
-// Assuming your OAuth component is in ../components/OAuth.jsx
-// Adjust the import path if your OAuth component is located elsewhere
-import OAuth from '../components/OAuth'; // <--- ADD THIS IMPORT
+
+import OAuth from '../components/OAuth'; // 
 
 export default function SignIn() {
   const [formData, setFormData] = useState({});
@@ -24,21 +23,23 @@ export default function SignIn() {
       dispatch(signInStart());
       const res = await axios.post('/api/auth/signin', formData);
       const data = res.data;
+            console.log('SignIn handleSubmit: Full Backend Response Data:', data); 
 
-      console.log('Backend Sign-in Response:', data); 
+
 
       if (data.success === false) { 
         dispatch(signInFailure(data.message));
         return;
       }
 
+      console.log('SignIn handleSubmit: Value of data.token before storing:', data.token);
+
       // Store the JWT token in localStorage
       if (data.token) { 
         localStorage.setItem('token', data.token);
-        console.log('JWT Token stored in localStorage:', data.token);
+        console.log('SignIn handleSubmit: JWT Token successfully stored in localStorage.'); 
       } else {
-        console.warn('No token received from backend sign-in response. Check your backend auth.controller.js');
-      }
+console.warn('SignIn handleSubmit: No token received from backend sign-in response. Check your backend auth.controller.js');      }
 
       dispatch(signInSuccess(data.user)); 
       navigate('/');

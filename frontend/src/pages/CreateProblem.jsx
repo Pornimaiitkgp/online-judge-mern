@@ -1,4 +1,4 @@
-// client/src/pages/CreateProblem.js
+// frontend/src/pages/CreateProblem.jsx
 
 import React, { useState } from 'react';
 import axios from 'axios';
@@ -45,17 +45,19 @@ const CreateProblem = () => {
         setMessage('');
         setError('');
         try {
-            // Get token from localStorage (assuming it's stored after login)
             const token = localStorage.getItem('token');
+            console.log("CreateProblem: Token from localStorage:", token); 
+            
             if (!token) {
-                setError('Authentication required. Please log in as an admin.');
+                setError('Authentication required. Please log in as an admin.'); 
+                console.log("CreateProblem: Token is missing, setting error."); 
                 return;
             }
 
             const config = {
                 headers: {
                     'Content-Type': 'application/json',
-                    'x-auth-token': token // Send JWT token in header
+                    'Authorization': `Bearer ${token}` 
                 }
             };
             const response = await axios.post('/api/problems', formData, config);
@@ -69,9 +71,10 @@ const CreateProblem = () => {
                 sampleTestCases: [{ input: '', output: '' }],
                 constraints: ''
             });
-            navigate('/problems'); // Redirect to problem list after creation
+            navigate('/problems');
         } catch (err) {
-            console.error('Error creating problem:', err);
+            console.error('Error creating problem (from catch block):', err);
+            // This error will now likely come from backend if token is invalid or user is not admin
             setError(err.response?.data?.message || 'Failed to create problem. Please check your input.');
         }
     };
