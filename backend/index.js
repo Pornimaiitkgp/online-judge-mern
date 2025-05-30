@@ -1,9 +1,13 @@
 import express from 'express';
 import mongoose from 'mongoose';
+
 import dotenv from 'dotenv';
 import userRouter from './routes/user.route.js';
 import authRouter from './routes/auth.route.js';
 import cookieParser from 'cookie-parser';
+import authRoutes from './routes/auth.route.js'; // Notice the .js extension!
+import problemRoutes from './routes/problemRoutes.js'; // Notice the .js extension!
+
 dotenv.config();
 
 mongoose
@@ -15,7 +19,24 @@ mongoose
     console.log(err);
   });
 
+
+// server/server.js (or app.js)
+
+
+
+dotenv.config();
+
+
 const app = express();
+app.use(express.json()); // Body parser
+
+// ... other middleware like CORS if you have it ...
+
+app.use('/api/auth', authRoutes);
+app.use('/api/problems', problemRoutes); // Integrate problem routes
+
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
 app.use(express.json());
 
@@ -37,3 +58,6 @@ app.use((err, req, res, next) => {
     message,
   });
 });
+
+
+
