@@ -1,10 +1,12 @@
-
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { signInStart, signInSuccess, signInFailure } from '../redux/user/userSlice';
-import {jwtDecode} from 'jwt-decode'; 
-import OAuth from '../components/OAuth';
+import axios from 'axios';
+
+// Assuming your OAuth component is in ../components/OAuth.jsx
+// Adjust the import path if your OAuth component is located elsewhere
+import OAuth from '../components/OAuth'; // <--- ADD THIS IMPORT
 
 export default function SignIn() {
   const [formData, setFormData] = useState({});
@@ -13,46 +15,36 @@ export default function SignIn() {
   const dispatch = useDispatch();
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.id]: e.target.value,
-    });
+    setFormData({ ...formData, [e.target.id]: e.target.value });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       dispatch(signInStart());
+      const res = await axios.post('/api/auth/signin', formData);
+      const data = res.data;
 
-      const res = await fetch('/api/auth/signin', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
+      console.log('Backend Sign-in Response:', data); 
 
-      const data = await res.json();
-      console.log(data);
-
-      if (data.success === false) {
+      if (data.success === false) { 
         dispatch(signInFailure(data.message));
         return;
       }
 
-      const token = data.token;
-      if (token) {
-        const decoded = jwtDecode(token);
-        console.log('Decoded token:', decoded);
-
-        // Optional: Store token for future use
-        localStorage.setItem('token', token);
+      // Store the JWT token in localStorage
+      if (data.token) { 
+        localStorage.setItem('token', data.token);
+        console.log('JWT Token stored in localStorage:', data.token);
+      } else {
+        console.warn('No token received from backend sign-in response. Check your backend auth.controller.js');
       }
 
-      dispatch(signInSuccess(data));
+      dispatch(signInSuccess(data.user)); 
       navigate('/');
     } catch (error) {
-      dispatch(signInFailure(error.message));
+      console.error('Sign-in error:', error);
+      dispatch(signInFailure(error.response?.data?.message || error.message || 'An unknown error occurred during sign-in.'));
     }
   };
 
@@ -61,34 +53,39 @@ export default function SignIn() {
       <h1 className='text-3xl text-center font-semibold my-7'>Sign In</h1>
       <form onSubmit={handleSubmit} className='flex flex-col gap-4'>
         <input
-          type='text'
-          placeholder='Email'
+          type='email'
+          placeholder='email'
           className='border p-3 rounded-lg'
           id='email'
           onChange={handleChange}
+          required
         />
         <input
           type='password'
-          placeholder='Password'
+          placeholder='password'
           className='border p-3 rounded-lg'
           id='password'
           onChange={handleChange}
+          required
         />
+
         <button
           disabled={loading}
-          className='bg-slate-700 text-white p-3 rounded-lg hover:bg-slate-800 transition-all duration-300 uppercase'
+          className='bg-slate-700 text-white p-3 rounded-lg uppercase hover:opacity-95 disabled:opacity-80'
         >
           {loading ? 'Loading...' : 'Sign In'}
         </button>
-        <OAuth/>
+        
+            <OAuth />
+       
       </form>
       <div className='flex gap-2 mt-5'>
-        <p>Don't have an account?</p>
-        <Link to='/signup'>
+        <p>Dont have an account?</p>
+        <Link to={'/signup'}>
           <span className='text-blue-700'>Sign up</span>
         </Link>
       </div>
-      {error && <p className='text-red-500 mt-3'>{error}</p>}
+      {error && <p className='text-red-500 mt-5'>{error}</p>}
     </div>
   );
 }

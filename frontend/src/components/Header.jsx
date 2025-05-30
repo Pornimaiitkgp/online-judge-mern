@@ -30,9 +30,20 @@ export default function Header() {
             <li className='hidden sm:inline text-slate-700 hover:underline'>About</li>
           </Link>
 
-          {/* Corrected Profile/Sign In Link Logic */}
+          {/* NEW: Link to Problems List (General access) */}
+          <Link to='/problems'>
+            <li className='hidden sm:inline text-slate-700 hover:underline'>Problems</li>
+          </Link>
+
+          {/* NEW: Conditional Link for Create Problem (Admin Only) */}
+          {currentUser && currentUser.isAdmin && (
+            <Link to='/create-problem'> {/* Notice: /create-problem (singular) */}
+              <li className='hidden sm:inline text-slate-700 hover:underline'>Create Problem</li>
+            </Link>
+          )}
+
+          {/* Profile/Sign In Link Logic */}
           {currentUser ? (
-            // If currentUser exists, link to profile and show avatar
             <Link to='/profile'>
               <img
                 className='rounded-full h-7 w-7 object-cover'
@@ -41,7 +52,6 @@ export default function Header() {
               />
             </Link>
           ) : (
-            // If no currentUser, link directly to sign in
             <Link to='/signin'>
               <li className='text-slate-700 hover:underline'>Sign in</li>
             </Link>
