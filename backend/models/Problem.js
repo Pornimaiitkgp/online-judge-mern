@@ -37,7 +37,8 @@ const ProblemSchema = new mongoose.Schema({
         }
     ],
     constraints: {
-        type: String
+        type: String,
+        required: true
     },
     // Reference to the user who created the problem
     createdBy: {

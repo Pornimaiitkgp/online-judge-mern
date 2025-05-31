@@ -1,24 +1,27 @@
-// server/controllers/submissionController.js
 
-import Submission from '../models/Submission.js'; // Change 'require' to 'import' and add .js
-import Problem from '../models/Problem.js'; // Change 'require' to 'import' and add .js
+import Submission from '../models/Submission.js'; 
+import Problem from '../models/Problem.js'; 
+
+
+import axios from 'axios'; 
+
+// Add this at the top of your file
+const JUDGE_SERVICE_URL = process.env.JUDGE_SERVICE_URL || 'http://localhost:5001'; // Get from .env
 
 // @desc    Create a new submission
 // @route   POST /api/submissions
 // @access  Private (Authenticated User)
-export const createSubmission = async (req, res) => { // Change 'exports.createSubmission' to 'export const createSubmission'
+export const createSubmission = async (req, res) => {
     try {
         const { problemId, code, language } = req.body;
-        // req.user will be populated by your 'protect' middleware
         const userId = req.user._id;
 
-        // Basic validation
         if (!problemId || !code || !language) {
             return res.status(400).json({ message: 'Problem ID, code, and language are required.' });
         }
 
-        // Check if problem exists
-        const problem = await Problem.findById(problemId);
+        // Fetch the problem to get all test cases (both sample and hidden)
+        const problem = await Problem.findById(problemId); // This fetches all fields by default
         if (!problem) {
             return res.status(404).json({ message: 'Problem not found.' });
         }
@@ -28,17 +31,51 @@ export const createSubmission = async (req, res) => { // Change 'exports.createS
             problem: problemId,
             code,
             language,
-            status: 'Pending', // Initial status
-            totalTestCases: problem.sampleTestCases.length // For now, just sample test cases
+            status: 'Pending',
+            totalTestCases: (problem.sampleTestCases.length + problem.hiddenTestCases.length) // Total test cases
         });
 
         const submission = await newSubmission.save();
 
-        res.status(201).json({
-            message: 'Submission received. It is now pending judgment.',
-            submissionId: submission._id,
-            status: submission.status
-        });
+        try {
+            const judgeResponse = await axios.post(`${JUDGE_SERVICE_URL}/execute`, {
+                submissionId: submission._id,
+                code: code,
+                language: language,
+                testCases: [...problem.sampleTestCases, ...problem.hiddenTestCases] // Send ALL test cases
+            });
+
+            // Update submission status based on judge service's detailed response
+            submission.status = judgeResponse.data.status;
+            submission.output = judgeResponse.data.message; // General message/summary
+            submission.executionTime = judgeResponse.data.totalExecutionTime;
+            submission.memoryUsed = judgeResponse.data.maxMemoryUsed;
+            submission.testCasesPassed = judgeResponse.data.testCasesPassed;
+            // You might want to store detailed test case results in a new field on the submission model
+            // For now, let's keep it simple.
+
+            await submission.save();
+
+            res.status(201).json({
+                message: 'Submission received and judged.',
+                submissionId: submission._id,
+                status: submission.status,
+                judgeResult: judgeResponse.data // Send full judge result back to client
+            });
+
+        } catch (judgeError) {
+            console.error('Error sending submission to judge service:', judgeError.message);
+            submission.status = 'Error';
+            submission.output = `Failed to connect to judge service or judge service error: ${judgeError.message}`;
+            await submission.save();
+
+            res.status(500).json({
+                message: 'Submission received but failed to process by judge service.',
+                submissionId: submission._id,
+                status: submission.status,
+                judgeError: judgeError.response?.data || judgeError.message
+            });
+        }
 
     } catch (error) {
         console.error(error);
@@ -46,9 +83,8 @@ export const createSubmission = async (req, res) => { // Change 'exports.createS
     }
 };
 
-// @desc    Get all submissions for a user (or for a problem, or all for admin)
-// @route   GET /api/submissions/me
-// @access  Private (Authenticated User)
+
+
 export const getUserSubmissions = async (req, res) => { // Change 'exports.getUserSubmissions' to 'export const getUserSubmissions'
     try {
         const submissions = await Submission.find({ user: req.user._id })
