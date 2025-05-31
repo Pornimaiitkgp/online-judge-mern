@@ -1,4 +1,3 @@
-// frontend/src/App.jsx
 
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
@@ -9,7 +8,7 @@ import SignIn from "./pages/SignIn.jsx";
 import About from "./pages/About.jsx";
 import Header from "./components/Header.jsx";
 import PrivateRoute from "./components/PrivateRoute.jsx"; // Reverted to general private route
-import AdminRoute from "./components/AdminRoute.jsx";   // <--- NEW: Import AdminRoute
+import AdminRoute from "./components/AdminRoute.jsx";  
 
 // Imports for the Online Judge features
 import ProblemList from './pages/ProblemList.jsx';
@@ -20,7 +19,7 @@ import ProblemDetail from './pages/ProblemDetail.jsx';
 function App() {
     return (
         <Router>
-            <Header /> {/* Render your header on all pages */}
+            <Header /> 
 
             <Routes>
                 {/* Public Routes */}
