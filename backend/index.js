@@ -6,6 +6,7 @@ import authRouter from './routes/auth.route.js';
 import cookieParser from 'cookie-parser';
 import authRoutes from './routes/auth.route.js'; 
 import problemRoutes from './routes/problemRoutes.js'; 
+import submissionRoutes from './routes/submissionRoutes.js';
 
 dotenv.config();
 
@@ -28,6 +29,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/user', userRouter);
 app.use('/api/auth', authRouter); 
 app.use('/api/problems', problemRoutes);
+app.use('/api/submissions', submissionRoutes); 
 
 app.use((err, req, res, next) => {
   const statusCode = err.statusCode || 500;

@@ -3,14 +3,18 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 const ProblemDetail = () => {
-    const { id } = useParams(); // Get problem ID from URL parameter
+    const { id } = useParams();
+    const navigate = useNavigate(); // Initialize navigate
     const [problem, setProblem] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [code, setCode] = useState(''); // State for user's code input
+    const [code, setCode] = useState('');
     const [language, setLanguage] = useState('cpp'); // Default language
+    const [submitMessage, setSubmitMessage] = useState('');
+    const [submitError, setSubmitError] = useState('');
 
     useEffect(() => {
         const fetchProblem = async () => {
@@ -28,12 +32,48 @@ const ProblemDetail = () => {
         fetchProblem();
     }, [id]); // Re-run effect if ID changes
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        // This is where you'll send the code and language to the backend later
-        console.log('Submitting code:', code);
-        console.log('Language:', language);
-        alert('Code submission logic will be implemented in the next parts!');
+        setSubmitMessage('');
+        setSubmitError('');
+
+        try {
+            const token = localStorage.getItem('token'); // Get token from localStorage
+            console.log("ProblemDetail: Token from localStorage:", token); // Add this log for debugging
+            
+            if (!token) {
+                setSubmitError('You must be logged in to submit code.');
+                navigate('/signin'); // Redirect to signin if not authenticated (not '/login')
+                console.log("ProblemDetail: Token is missing, setting error and redirecting.");
+                return;
+            }
+
+            const config = {
+                headers: {
+                    'Content-Type': 'application/json',
+                    // *** FIX HERE: Change 'x-auth-token' to 'Authorization' with 'Bearer ' prefix ***
+                    'Authorization': `Bearer ${token}` 
+                }
+            };
+
+            const submissionData = {
+                problemId: id,
+                code,
+                language
+            };
+
+            const response = await axios.post('/api/submissions', submissionData, config);
+            setSubmitMessage(`Submission received! Status: ${response.data.status}. Submission ID: ${response.data.submissionId}`);
+            // Optionally, clear the code editor after successful submission
+            // setCode('');
+            // You might want to redirect to a submission status page later
+            // navigate(`/submissions/${response.data.submissionId}`);
+
+        } catch (err) {
+            console.error('Error submitting code:', err);
+            // It's good practice to get the message from the response data if available
+            setSubmitError(err.response?.data?.message || 'Failed to submit code. Please try again.');
+        }
     };
 
     if (loading) {
@@ -87,6 +127,8 @@ const ProblemDetail = () => {
             <hr style={{ margin: '30px 0' }} />
 
             <h2>Submit Your Solution</h2>
+            {submitMessage && <p style={{ color: 'green' }}>{submitMessage}</p>}
+            {submitError && <p style={{ color: 'red' }}>{submitError}</p>}
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                 <label htmlFor="language-select">Select Language:</label>
                 <select
@@ -98,7 +140,6 @@ const ProblemDetail = () => {
                     <option value="cpp">C++</option>
                     <option value="python">Python</option>
                     <option value="java">Java</option>
-                    {/* Add more languages as you integrate judges */}
                 </select>
 
                 <label htmlFor="code-editor">Your Code:</label>
