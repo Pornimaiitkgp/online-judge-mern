@@ -14,6 +14,7 @@ import AdminRoute from "./components/AdminRoute.jsx";
 import ProblemList from './pages/ProblemList.jsx';
 import CreateProblem from './pages/CreateProblem.jsx';
 import ProblemDetail from './pages/ProblemDetail.jsx';
+import MySubmissions from './pages/MySubmissions.jsx';
 
 
 function App() {
@@ -27,6 +28,7 @@ function App() {
                 <Route path="/about" element={<About />} />
                 <Route path="/problems" element={<ProblemList />} />
                 <Route path="/problems/:id" element={<ProblemDetail />} />
+                <Route path="/mysubmissions" element={<MySubmissions />} />
 
                 {/* Authentication Routes */}
                 <Route path="/signin" element={<SignIn />} />
