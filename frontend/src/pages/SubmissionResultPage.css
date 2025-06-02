@@ -1,0 +1,105 @@
+.submission-result-container {
+    max-width: 900px;
+    margin: 20px auto;
+    padding: 20px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    font-family: Arial, sans-serif;
+}
+
+.submission-result-container h2 {
+    text-align: center;
+    color: #333;
+    margin-bottom: 25px;
+}
+
+.result-card {
+    background-color: #fff;
+    padding: 25px;
+    border-radius: 8px;
+    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.05);
+}
+
+.result-card p {
+    margin-bottom: 10px;
+    font-size: 1.1em;
+    line-height: 1.5;
+}
+
+.result-card strong {
+    color: #555;
+}
+
+.status-pending { color: #f0ad4e; } /* Orange */
+.status-completed { color: #5cb85c; } /* Green */
+.status-error { color: #d9534f; }    /* Red */
+
+.verdict-accepted { color: #28a745; font-weight: bold; } /* Darker Green */
+.verdict-wrong-answer { color: #dc3545; font-weight: bold; } /* Red */
+.verdict-time-limit-exceeded { color: #ffc107; font-weight: bold; } /* Yellow */
+.verdict-memory-limit-exceeded { color: #6f42c1; font-weight: bold; } /* Purple */
+.verdict-runtime-error { color: #fd7e14; font-weight: bold; } /* Orange-Red */
+.verdict-compilation-error { color: #007bff; font-weight: bold; } /* Blue */
+.verdict-internal-error { color: #6c757d; font-weight: bold; } /* Grey */
+
+.output-section {
+    margin-top: 20px;
+    padding: 15px;
+    background-color: #e9ecef;
+    border-radius: 5px;
+    border-left: 5px solid #007bff;
+}
+
+.output-section h3 {
+    margin-top: 0;
+    color: #333;
+    font-size: 1.2em;
+    margin-bottom: 10px;
+}
+
+.compiler-output, .error-message-detail, .test-case-result pre {
+    background-color: #f8f9fa;
+    border: 1px solid #ced4da;
+    padding: 10px;
+    border-radius: 4px;
+    font-family: 'Courier New', Courier, monospace;
+    white-space: pre-wrap; /* Allows text to wrap */
+    word-break: break-all; /* Breaks long words */
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.detailed-results {
+    margin-top: 30px;
+}
+
+.detailed-results h3 {
+    text-align: center;
+    color: #333;
+    margin-bottom: 20px;
+}
+
+.test-case-result {
+    border: 1px solid #ddd;
+    padding: 15px;
+    margin-bottom: 15px;
+    border-radius: 8px;
+    background-color: #fff;
+}
+
+.test-case-result h4 {
+    margin-top: 0;
+    font-size: 1.1em;
+    margin-bottom: 10px;
+}
+
+.test-case-result.passed {
+    border-color: #28a745;
+    background-color: #e6ffe6;
+}
+
+.test-case-result.failed {
+    border-color: #dc3545;
+    background-color: #ffe6e6;
+}

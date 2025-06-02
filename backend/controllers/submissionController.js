@@ -2,14 +2,7 @@
 
 import Submission from '../models/Submission.js';
 import Problem from '../models/Problem.js';
-// --- REMOVED: exec, fs, path, fileURLToPath from 'url' ---
-// These are no longer needed here as the Docker Judge Server handles execution.
-
-// --- REMOVED: TEMP_CODE_DIR constant and fs.mkdir call ---
-// Temporary file management is now handled by the Judge Server.
-
-// --- REMOVED: executeShellCommand helper function ---
-// This execution logic is now handled by the Judge Server.
+import axios from 'axios'; // axios is usually CommonJS or ESM compatible by default
 
 // @desc    Create a new submission record
 // @route   POST /api/submissions
@@ -20,7 +13,7 @@ export const createSubmission = async (req, res, next) => { // Added 'next' for 
     const userId = req.user._id;
 
     if (!problemId || !code || !language) {
-        return res.status(400).json({ message: 'Problem ID, code, and language are required.' });
+        return res.status(400).json({ success: false, message: 'Problem ID, code, and language are required.' });
     }
 
     try {
@@ -28,7 +21,7 @@ export const createSubmission = async (req, res, next) => { // Added 'next' for 
         // These details will be needed by the frontend to send to the /api/judge endpoint
         const problem = await Problem.findById(problemId);
         if (!problem) {
-            return res.status(404).json({ message: 'Problem not found.' });
+            return res.status(404).json({ success: false, message: 'Problem not found.' });
         }
 
         // Create a new submission in DB with 'Pending' status
@@ -70,8 +63,9 @@ export const createSubmission = async (req, res, next) => { // Added 'next' for 
     }
 };
 
-// --- Other existing controller functions (getUserSubmissions, getSubmissionById - keep them as is) ---
-
+// @desc    Get all submissions for a user
+// @route   GET /api/submissions/user
+// @access  Private (Authenticated User)
 export const getUserSubmissions = async (req, res, next) => {
     try {
         const submissions = await Submission.find({ user: req.user._id })
@@ -84,8 +78,12 @@ export const getUserSubmissions = async (req, res, next) => {
     }
 };
 
+// @desc    Get a single submission by ID
+// @route   GET /api/submissions/:id
+// @access  Private (Authenticated User or Admin)
 export const getSubmissionById = async (req, res, next) => {
     try {
+        const { id } = req.params;
         const submission = await Submission.findById(req.params.id).populate('problem');
 
         if (!submission) {
@@ -97,16 +95,12 @@ export const getSubmissionById = async (req, res, next) => {
             return res.status(403).json({ message: 'Forbidden: You are not authorized to view this submission.' });
         }
 
-        res.json(submission);
+        res.status(200).json(submission);
     } catch (error) {
-        console.error(error);
-        if (error.name === 'CastError') {
-            return res.status(400).json({ message: 'Invalid Submission ID' });
-        }
-        next(error);
+        console.error('Error fetching submission by ID:', error);
+        res.status(500).json({ message: 'Server error', error: error.message });
     }
 };
-
 
 // @desc    Update submission details (including status, verdict, time, memory, results, etc.)
 // @route   PUT /api/submissions/:id
@@ -121,7 +115,6 @@ export const updateSubmissionDetails = async (req, res, next) => {
         const {
             verdict,                // e.g., 'Accepted', 'Wrong Answer', 'Compilation Error'
             actualOutput,           // Overall output (e.g., compile error messages or user's main output)
-            // ADDED 'compilerOutput' here to destructure it from req.body
             compilerOutput,         // Compiler output (stderr from compilation)
             dockerCommandOutput,    // Raw docker stdout
             dockerCommandErrors,    // Raw docker stderr
@@ -130,54 +123,30 @@ export const updateSubmissionDetails = async (req, res, next) => {
             memoryUsed,             // Max memory used across test cases
             testCasesPassed,        // Count of passed test cases
             totalTestCases,         // Total count of test cases
-            detailedResults         // Array of results for each test case
+            detailedResults,        // Array of results for each test case
+            overallMessage          // The new overall message from judge server
         } = req.body;
 
-        // Ensure the submission belongs to the current user or is being updated by an admin/system
-        // For internal service calls, you might simplify auth or use an internal API key check instead of authenticateUser
-        // For now, authenticateUser check is assumed to be sufficient for your backend proxy's call
         const submission = await Submission.findById(submissionId);
         if (!submission) {
             return res.status(404).json({ message: 'Submission not found.' });
         }
 
-        // IMPORTANT: If you want to ensure only the submission's owner (or admin) can update,
-        // you would add a check like:
-        // if (submission.user.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
-        //     return res.status(403).json({ message: 'Forbidden: You are not authorized to update this submission.' });
-        // }
-        // However, in the proxy scenario, the `req.user` here would be the user who *initiated* the submission,
-        // so it generally works.
-
         // Update the submission fields based on the judge server's result
         submission.status = verdict || status || 'Error'; // Use verdict as primary status, fallback to status
-        let finalOutputMessage = 'No specific output or error details provided.'; // Default fallback
-         if (verdict === 'Accepted') {
-            finalOutputMessage = 'All test cases passed successfully.';
-        } else if (verdict === 'Compilation Error') {
-            finalOutputMessage = compilerOutput || 'Compilation failed with no specific output provided.';
-        } else if (verdict === 'Runtime Error') {
-            const firstFailedTest = detailedResults.find(res => res.status === 'Runtime Error');
-            finalOutputMessage = (firstFailedTest && firstFailedTest.stderr) || dockerCommandErrors || 'Program terminated with runtime error.';
-        } else if (verdict === 'Time Limit Exceeded') {
-            finalOutputMessage = dockerCommandErrors || 'Program exceeded time limit.'; // Docker usually puts timeout message here
-        } else if (verdict === 'Memory Limit Exceeded') {
-            finalOutputMessage = dockerCommandErrors || 'Program exceeded memory limit.'; // Docker usually puts OOM message here
-        } else if (dockerCommandErrors) {
-            // Catch-all for other docker errors
-            finalOutputMessage = `Docker Error: ${dockerCommandErrors}`;
-        } else if (actualOutput) {
-            finalOutputMessage = actualOutput;
-        }
+        submission.output = overallMessage || 'No specific output or error details provided.'; // Use the new overallMessage
 
-        submission.output = finalOutputMessage;
-       
         submission.executionTime = executionTime || 0;
         submission.memoryUsed = memoryUsed || 'N/A'; // Judge server might send 'KB' or 'MB'
         submission.testCasesPassed = testCasesPassed || 0;
         submission.totalTestCases = totalTestCases || submission.totalTestCases;
         submission.detailedResults = detailedResults || []; // Store full detailed results from judge server
         submission.judgedAt = new Date(); // Record when judging was completed
+
+        // Store the raw outputs for debugging if needed
+        submission.compilerOutput = compilerOutput || '';
+        submission.dockerCommandOutput = dockerCommandOutput || '';
+        submission.dockerCommandErrors = dockerCommandErrors || '';
 
         await submission.save();
 

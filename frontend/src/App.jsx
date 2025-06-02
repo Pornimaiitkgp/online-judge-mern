@@ -11,6 +11,7 @@ import Header from "./components/Header.jsx";
 import PrivateRoute from "./components/PrivateRoute.jsx"; // Reverted to general private route
 import AdminRoute from "./components/AdminRoute.jsx";  
 import SubmissionDetail from './pages/SubmissionDetail.jsx';
+import SubmissionResultPage from './pages/SubmissionResultPage.jsx';
 
 // Imports for the Online Judge features
 import ProblemList from './pages/ProblemList.jsx';
@@ -34,6 +35,7 @@ function App() {
                 <Route path="/problems/:id" element={<ProblemDetail />} />
                 <Route path="/mysubmissions" element={<MySubmissions />} />
                 <Route path="/submissions/:id" element={<SubmissionDetail />} />
+                <Route path="/submissions/:submissionId" element={<SubmissionResultPage />} />
 
                 {/* Authentication Routes */}
                 <Route path="/signin" element={<SignIn />} />

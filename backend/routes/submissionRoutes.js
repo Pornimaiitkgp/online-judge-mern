@@ -4,27 +4,29 @@ import express from 'express';
 const router = express.Router();
 
 import {
-    createSubmission,       // This controller will now ONLY create the submission record in DB (e.g., status: 'Pending')
+    createSubmission,       // Use this for initial POST
     getUserSubmissions,
     getSubmissionById,
-    updateSubmissionDetails // <--- RENAMED: This controller will update status AND all judging results
-} from '../controllers/submissionController.js';
-import { authenticateUser } from '../middleware/authMiddleware.js'; // Assuming authorizeRoles is not directly needed on these endpoints for now
+    updateSubmissionDetails // Use this for PUT (updating results after judging)
+} from '../controllers/submissionController.js'; // Ensure .js extension for ES Modules
 
-// Create a new submission record in the database.
-// The frontend calls this first. It saves the code, language, problemId, etc.
-// The submission will initially have a 'Pending' status.
-router.post('/', authenticateUser, createSubmission);
+import { authenticateUser } from '../middleware/authMiddleware.js'; // Assuming you have this
 
-// Get submissions for the authenticated user
+// 1. Create a new submission record in the database.
+//    The frontend calls this first. It saves the code, language, problemId, etc.
+//    The submission will initially have a 'Pending' status.
+router.post('/', authenticateUser, createSubmission); // This is the primary submission route
+
+// 2. Get submissions for the authenticated user (e.g., submission history page)
 router.get('/me', authenticateUser, getUserSubmissions);
 
-// Get a single submission by ID (user or admin)
+// 3. Get a single submission by ID (used by the frontend's SubmissionResultPage)
+//    This replaces the two previous /:id GET routes and consolidates.
 router.get('/:id', authenticateUser, getSubmissionById);
 
-// Update submission details (including status, verdict, time, memory, detailed results, etc.).
-// This route will be called INTERNALLY by your main backend's '/api/judge' route
-// after it receives the full judging results from the Docker Judge Server.
-router.put('/:id', authenticateUser, updateSubmissionDetails); // <--- Endpoint changed to /:id for a full update
+// 4. Update submission details (including status, verdict, time, memory, detailed results, etc.).
+//    This route will be called INTERNALLY by your main backend's '/api/judge' route
+//    after it receives the full judging results from the Docker Judge Server.
+router.put('/:id', authenticateUser, updateSubmissionDetails);
 
-export default router;
+export default router; // Use export default for the router

@@ -1,4 +1,4 @@
-// client/src/pages/ProblemDetail.js
+// online_judge/frontend/src/pages/ProblemDetail.js
 
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
@@ -18,7 +18,7 @@ const ProblemDetail = () => {
     const [code, setCode] = useState(''); // Stores the code from the editor
     const [language, setLanguage] = useState('cpp'); // Default language, maps to Monaco language IDs
 
-    const [judgeResult, setJudgeResult] = useState(null); // Stores the final result from the judge server
+    // Removed: const [judgeResult, setJudgeResult] = useState(null); // This will now be on SubmissionResultPage
     const [submitLoading, setSubmitLoading] = useState(false);
     const [submitError, setSubmitError] = useState('');
     const [submitMessage, setSubmitMessage] = useState('');
@@ -102,7 +102,7 @@ if __name__ == "__main__":
         }
     };
 
-    // Helper for status color
+    // Helper for status color (no longer strictly needed here, but can keep for other uses)
     const getStatusColor = (status) => {
         switch (status) {
             case 'Accepted': return 'green';
@@ -125,7 +125,7 @@ if __name__ == "__main__":
         e.preventDefault();
         setSubmitMessage('');
         setSubmitError('');
-        setJudgeResult(null); // Clear previous judging results
+        // Removed: setJudgeResult(null); // Clear previous judging results as it's not displayed here
         setSubmitLoading(true);
 
         try {
@@ -176,36 +176,39 @@ if __name__ == "__main__":
                 throw new Error(judgeResponse.data.error || 'Judging failed unexpectedly or returned no data.');
             }
 
-            const finalJudgeResult = judgeResponse.data;
+            // const finalJudgeResult = judgeResponse.data; // No longer needed here as we redirect
 
             // --- STEP 3: Update the submission in your main backend database with the judging result ---
             // This calls your /api/submissions/:id route (which uses updateSubmissionDetails controller)
+            // This PUT request *must* happen before navigation if you want the results available immediately
             await axios.put(`/api/submissions/${createdSubmission._id}`, {
-                verdict: finalJudgeResult.verdict,
-                actualOutput: finalJudgeResult.actualOutput,
-                expectedOutput: finalJudgeResult.expectedOutput,
-                dockerCommandOutput: finalJudgeResult.dockerCommandOutput,
-                dockerCommandErrors: finalJudgeResult.dockerCommandErrors,
-                compilerOutput: finalJudgeResult.compilerOutput, // Ensure this field is included if it comes from judge server
-                status: finalJudgeResult.status, // The judge server's overall status (e.g., 'completed')
-                executionTime: finalJudgeResult.executionTime,
-                memoryUsed: finalJudgeResult.memoryUsed,
-                testCasesPassed: finalJudgeResult.testCasesPassed,
-                totalTestCases: finalJudgeResult.totalTestCases,
-                detailedResults: finalJudgeResult.detailedResults
+                verdict: judgeResponse.data.verdict, // Use judgeResponse.data directly
+                actualOutput: judgeResponse.data.actualOutput,
+                expectedOutput: judgeResponse.data.expectedOutput,
+                dockerCommandOutput: judgeResponse.data.dockerCommandOutput,
+                dockerCommandErrors: judgeResponse.data.dockerCommandErrors,
+                compilerOutput: judgeResponse.data.compilerOutput,
+                status: judgeResponse.data.status,
+                executionTime: judgeResponse.data.executionTime,
+                memoryUsed: judgeResponse.data.memoryUsed,
+                testCasesPassed: judgeResponse.data.testCasesPassed,
+                totalTestCases: judgeResponse.data.totalTestCases,
+                detailedResults: judgeResponse.data.detailedResults,
+                overallMessage: judgeResponse.data.overallMessage // Ensure this is passed
             }, config);
 
-            setJudgeResult(finalJudgeResult); // Display the judge server's result on the page
-            setSubmitMessage('Code submitted and judged successfully!');
+            // Removed: setJudgeResult(finalJudgeResult); // No longer display on this page
+            setSubmitMessage('Code submitted successfully! Redirecting to results...');
+            
+            // Redirect to the submission result page
+            navigate(`/submissions/${createdSubmission._id}`); // This is the key change to navigate
 
         } catch (err) {
             console.error('Error during submission process:', err);
             setSubmitError(err.response?.data?.message || err.message || 'Failed to submit code. Please try again.');
-            // If the error response itself contains detailed results (e.g., if an internal error occurs after some judging)
-            // This line specifically for displaying errors coming back from the judge or backend proxy
-            if (err.response?.data) {
-                setJudgeResult(err.response.data); // Display partial results/errors from judge
-            }
+            // Removed: if (err.response?.data) { setJudgeResult(err.response.data); }
+            // If you still want to show *some* error on this page for failed submissions,
+            // you can modify submitError or submitMessage accordingly.
         } finally {
             setSubmitLoading(false);
         }
@@ -307,81 +310,9 @@ if __name__ == "__main__":
                 </button>
             </form>
 
-            {/* --- Display JUDGE SERVER Results Here --- */}
-            {judgeResult && (
-                <div style={{ marginTop: '40px', border: '1px solid #ddd', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}>
-                    <h2>Judging Result (from Judge Server)</h2>
-                    {/* Use optional chaining for properties that might be undefined */}
-                    <p><strong>Status:</strong> <span style={{ color: getStatusColor(judgeResult.status), fontWeight: 'bold' }}>{judgeResult.status}</span></p>
-                    <p><strong>Verdict:</strong> <span style={{ color: getStatusColor(judgeResult.verdict), fontWeight: 'bold' }}>{judgeResult.verdict || 'N/A'}</span></p>
-                    <p><strong>Details:</strong> {judgeResult.detail || 'N/A'}</p>
+            {/* --- Removed: Display JUDGE SERVER Results Here --- */}
+            {/* The judge results will now be displayed on the /submissions/:submissionId page */}
 
-                    {judgeResult.actualOutput && (
-                        <>
-                            <p><strong>Actual Output:</strong></p>
-                            <pre style={{ backgroundColor: '#e9e9e9', padding: '10px', borderRadius: '3px', overflowX: 'auto' }}>{judgeResult.actualOutput}</pre>
-                        </>
-                    )}
-                    {judgeResult.expectedOutput && (
-                        <>
-                            <p><strong>Expected Output:</strong></p>
-                            <pre style={{ backgroundColor: '#e9e9e9', padding: '10px', borderRadius: '3px', overflowX: 'auto' }}>{judgeResult.expectedOutput}</pre>
-                        </>
-                    )}
-                    {judgeResult.dockerCommandOutput && (
-                        <>
-                            <p><strong>Docker Command Output:</strong></p>
-                            <pre style={{ backgroundColor: '#e9e9e9', padding: '10px', borderRadius: '3px', overflowX: 'auto' }}>{judgeResult.dockerCommandOutput}</pre>
-                        </>
-                    )}
-                    {judgeResult.dockerCommandErrors && (
-                        <>
-                            <p><strong>Docker Command Errors:</strong></p>
-                            <pre style={{ backgroundColor: '#ffe0e0', padding: '10px', borderRadius: '3px', overflowX: 'auto', border: '1px solid red', color: 'darkred' }}>{judgeResult.dockerCommandErrors}</pre>
-                        </>
-                    )}
-                    {/* Added compilerOutput check as well */}
-                    {judgeResult.compilerOutput && (
-                        <>
-                            <p><strong>Compiler Output:</strong></p>
-                            <pre style={{ backgroundColor: '#ffe0e0', padding: '10px', borderRadius: '3px', overflowX: 'auto', border: '1px solid red', color: 'darkred' }}>{judgeResult.compilerOutput}</pre>
-                        </>
-                    )}
-                    {judgeResult.detailedResults && judgeResult.detailedResults.length > 0 && (
-                        <div style={{ marginTop: '20px' }}>
-                            <h3>Test Case Results:</h3>
-                            {judgeResult.detailedResults.map((tcResult, index) => (
-                                <div key={index} style={{ border: `1px solid ${getStatusColor(tcResult.status)}`, padding: '15px', marginBottom: '15px', borderRadius: '5px', backgroundColor: '#fdfdfd' }}>
-                                    <h4>Test Case {tcResult.testCase}: <span style={{ color: getStatusColor(tcResult.status), float: 'right' }}>{tcResult.status}</span></h4>
-                                    {tcResult.message && tcResult.status !== 'Passed' && (
-                                        <p style={{ color: getStatusColor(tcResult.status), fontWeight: 'bold' }}>Reason: {tcResult.message}</p>
-                                    )}
-                                    {/* Ensure executionTime is a number before toFixed */}
-                                    <p><strong>Execution Time:</strong> {typeof tcResult.executionTime === 'number' ? `${tcResult.executionTime.toFixed(2)} ms` : 'N/A'}</p>
-                                    {tcResult.status !== 'Accepted' && tcResult.status !== 'Compilation Error' && (
-                                        <>
-                                            <div style={{ marginTop: '10px' }}>
-                                                <h4>Expected Output:</h4>
-                                                <pre style={{ backgroundColor: '#e9e9e9', padding: '10px', borderRadius: '3px', overflowX: 'auto' }}>{tcResult.expectedOutput}</pre>
-                                            </div>
-                                            <div style={{ marginTop: '10px' }}>
-                                                <h4>Your Output:</h4>
-                                                <pre style={{ backgroundColor: '#ffe0e0', padding: '10px', borderRadius: '3px', overflowX: 'auto', border: '1px solid red' }}>{tcResult.userOutput}</pre>
-                                            </div>
-                                        </>
-                                    )}
-                                    {(tcResult.status === 'Runtime Error' || tcResult.status === 'Time Limit Exceeded') && tcResult.userOutput && (
-                                        <div style={{ marginTop: '10px' }}>
-                                            <h4>Error/Trace Output:</h4>
-                                            <pre style={{ backgroundColor: '#ffe0e0', padding: '10px', borderRadius: '3px', overflowX: 'auto', border: '1px solid red', color: 'darkred' }}>{tcResult.userOutput}</pre>
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-            )}
         </div>
     );
 };
