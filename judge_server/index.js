@@ -1,198 +1,248 @@
-const express = require('express');
-const bodyParser = require('body-parser');
-const { exec } = require('child_process'); // For running shell commands (like 'docker run')
-const fs = require('fs/promises'); // For asynchronous file system operations (creating/writing files)
-const path = require('path'); // For working with file paths
-const { v4: uuidv4 } = require('uuid'); // For generating unique IDs
+// online_judge/judge_server/index.js
+import express from 'express';
+import { exec } from 'child_process';
+import path from 'path';
+import fs from 'fs/promises'; // Use fs.promises for async file operations
+import { fileURLToPath } from 'url';
+import { v4 as uuidv4 } from 'uuid'; // For generating unique IDs
+
+// Resolve __dirname in ES module
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = 3001;
+app.use(express.json());
 
-// Middleware to parse JSON request bodies
-app.use(bodyParser.json());
+const TEMP_CODE_DIR = path.join(__dirname, 'temp_submissions');
 
-// Main Judging Endpoint
-// This is where you send your code submission from Postman
-app.post('/judge/cpp', async (req, res) => {
-    // Extract data from the request body
-    const { code, language, testCases, timeLimit, memoryLimit } = req.body;
+// Ensure the temporary directory exists
+fs.mkdir(TEMP_CODE_DIR, { recursive: true }).catch(console.error);
 
-    // --- Input Validation (Optional but Recommended) ---
-    if (!code || !language || !testCases || !Array.isArray(testCases) || testCases.length === 0) {
-        return res.status(400).json({ status: 'failed', error: 'Missing or invalid submission data.' });
-    }
-    if (language !== 'cpp') { // Currently only supports C++
-        return res.status(400).json({ status: 'failed', error: 'Unsupported language. Only "cpp" is supported.' });
-    }
+// Helper function to execute shell commands
+const executeShellCommand = (command, options = {}) => {
+    return new Promise((resolve, reject) => {
+        exec(command, options, (error, stdout, stderr) => {
+            if (error) {
+                // If the command itself failed (e.g., docker not found, syntax error in command)
+                // console.error(`Command Error: ${error.message}`);
+                // console.error(`Stderr: ${stderr}`);
+                // console.error(`Stdout: ${stdout}`);
+                reject(new Error(`Command failed: ${command}\nError: ${error.message}\nStderr: ${stderr}\nStdout: ${stdout}`));
+            } else {
+                resolve({ stdout, stderr });
+            }
+        });
+    });
+};
 
-    // Generate a unique ID for this submission (helps with temporary files and debugging)
-    const submissionId = uuidv4();
+app.post('/judge/:language', async (req, res) => {
+    const { submissionId, code, language, testCases, timeLimit, memoryLimit } = req.body;
 
-    // Define the temporary directory path on your host machine
-    // This will be something like: /Users/pornimagaikwad/.../judge_server/temp/some-unique-id
-    const tempDirPath = path.join(__dirname, 'temp', submissionId);
-
-    // Define file paths for the user's code, input, and output *within this temp directory*
-    const userCodeFilePath = path.join(tempDirPath, 'user_code.cpp');
-    const inputFilePath = path.join(tempDirPath, 'input.txt');
-    const outputFilePath = path.join(tempDirPath, 'output.txt'); // Generic output name for simplicity
-
-    // Get the first test case's input and expected output
-    // For now, we'll only process the first test case. You can loop through testCases later.
-    const currentInput = testCases[0].input || ''; // Use empty string if no input provided
-    const expectedOutput = testCases[0].expectedOutput || '';
-
+    // Use submissionId if provided, otherwise generate a new one
+    const submissionIdToUse = submissionId || uuidv4();
+    const submissionTempDir = path.join(TEMP_CODE_DIR, submissionIdToUse);
 
     try {
-        // 1. Create the unique temporary directory for this submission
-        // { recursive: true } means it will create parent directories if they don't exist
-        await fs.mkdir(tempDirPath, { recursive: true });
-        console.log(`Created temp directory: ${tempDirPath}`);
+        await fs.mkdir(submissionTempDir, { recursive: true });
 
-        // 2. Write the user's submitted 'code' into 'user_code.cpp' in the temp directory
-        await fs.writeFile(userCodeFilePath, code);
-        console.log(`Wrote user code to: ${userCodeFilePath}`);
+        let filename, compileCommand, runCommand, dockerImage;
 
-        // 3. Write the test case 'input' into 'input.txt' in the temp directory
-        // IMPORTANT: Even if input is empty, create an empty file. This prevents 'No such file' error.
-        await fs.writeFile(inputFilePath, currentInput);
-        console.log(`Wrote input to: ${inputFilePath}`);
+        switch (language) {
+            case 'cpp':
+                filename = 'user_code.cpp';
+                dockerImage = 'cpp-judge-runner'; // Make sure this Docker image is built
+                compileCommand = `g++ /usr/src/app/${filename} -o /usr/src/app/exec_code -std=c++17 -O2`;
+                runCommand = `/usr/src/app/exec_code`; // Input/Output handled by redirection in Docker command
+                break;
+            case 'python':
+                filename = 'user_code.py';
+                dockerImage = 'python-judge-runner'; // You'll need to build this
+                compileCommand = ''; // Python is interpreted, no explicit compile step
+                runCommand = `python3 /usr/src/app/${filename}`;
+                break;
+            case 'java':
+                filename = 'Main.java'; // Assuming main class is Main
+                dockerImage = 'java-judge-runner'; // You'll need to build this
+                compileCommand = `javac /usr/src/app/${filename}`;
+                runCommand = `java -classpath /usr/src/app Main`;
+                break;
+            default:
+                return res.status(400).json({ status: 'failed', verdict: 'Invalid Language', error: `Language ${language} not supported.` });
+        }
 
-        // 4. Define the Docker image name. YOU MUST BUILD THIS IMAGE (see Step 4 below)
-        const dockerImageName = 'cpp-judge-runner';
+        await fs.writeFile(path.join(submissionTempDir, filename), code);
 
-        // 5. Construct the Docker command to execute inside the container
-        //    - 'docker run --rm': Run a container and remove it after it exits
-        //    - '-v "${tempDirPath}:/usr/src/app"': Mount your host's temp directory into the container's /usr/src/app
-        //      This makes user_code.cpp, input.txt, and output.txt accessible inside the container.
-        //    - 'cpp-judge-runner': The name of the Docker image to use
-        //    - '/bin/bash -c "..."': Execute a shell command inside the container
-        //      - 'g++ /usr/src/app/user_code.cpp -o /usr/src/app/exec_code -std=c++17 -O2': Compile user_code.cpp
-        //      - '&&': Logical AND, so the next command only runs if compilation succeeds
-        //      - '/usr/src/app/exec_code < /usr/src/app/input.txt > /usr/src/app/output.txt':
-        //        Execute the compiled code, redirecting input from input.txt and output to output.txt
-        const dockerCommand = `docker run --rm -v "${tempDirPath}:/usr/src/app" ${dockerImageName} /bin/bash -c "g++ /usr/src/app/user_code.cpp -o /usr/src/app/exec_code -std=c++17 -O2 && /usr/src/app/exec_code < /usr/src/app/input.txt > /usr/src/app/output.txt"`;
+        const results = [];
+        let overallVerdict = 'Accepted';
+        let overallExecutionTime = 0;
+        let overallMemoryUsed = 0;
+        let testCasesPassedCount = 0;
+        let compilerOutput = '';
 
-        console.log(`Executing Docker command for ${submissionId}: ${dockerCommand}`);
-
-        // Execute the Docker command
-        const { stdout, stderr } = await new Promise((resolve, reject) => {
-            // Set a timeout for the Docker command execution (in milliseconds)
-            // This acts as your Time Limit for the entire judging process (compile + run)
-            exec(dockerCommand, { timeout: timeLimit || 5000 }, (error, stdout, stderr) => {
-                if (error) {
-                    // If the command fails (e.g., compile error, runtime error, Docker issue)
-                    reject(error);
-                    return;
+        // --- Compilation Step (for compiled languages like C++, Java) ---
+        if (compileCommand) {
+            try {
+                const dockerCompileCommand = `docker run --rm -v "${submissionTempDir}:/usr/src/app" ${dockerImage} /bin/bash -c "${compileCommand} 2> /usr/src/app/compiler_errors.txt"`;
+                await executeShellCommand(dockerCompileCommand);
+                compilerOutput = await fs.readFile(path.join(submissionTempDir, 'compiler_errors.txt'), 'utf8');
+                if (compilerOutput.trim() !== '') {
+                    overallVerdict = 'Compilation Error';
+                    // No need to run test cases if compilation fails
+                    return res.json({
+                        submissionId: submissionIdToUse,
+                        status: 'completed',
+                        verdict: overallVerdict,
+                        compilerOutput: compilerOutput.trim(),
+                        detail: 'Compilation failed.',
+                        testCasesPassed: 0,
+                        totalTestCases: testCases.length,
+                        detailedResults: results
+                    });
                 }
-                resolve({ stdout, stderr }); // Resolve with stdout/stderr from the docker command itself
+            } catch (compileErr) {
+                // This catch handles errors from `docker run` itself or severe compilation issues
+                console.error(`Compilation Docker Command Error: ${compileErr.message}`);
+                compilerOutput = compileErr.message; // Capture the error message
+                overallVerdict = 'Compilation Error';
+                 return res.json({
+                    submissionId: submissionIdToUse,
+                    status: 'completed',
+                    verdict: overallVerdict,
+                    compilerOutput: compilerOutput.trim(),
+                    detail: 'Compilation failed due to an internal error or syntax issues.',
+                    testCasesPassed: 0,
+                    totalTestCases: testCases.length,
+                    detailedResults: results
+                });
+            }
+        }
+
+
+        // --- Test Case Execution ---
+        if (!testCases || testCases.length === 0) {
+            overallVerdict = 'No Test Cases';
+            return res.json({
+                submissionId: submissionIdToUse,
+                status: 'completed',
+                verdict: overallVerdict,
+                detail: 'No test cases provided for judging.',
+                testCasesPassed: 0,
+                totalTestCases: 0,
+                detailedResults: []
             });
-        });
-
-        console.log(`Docker execution finished for ${submissionId}`);
-
-        // 6. Read the actual output generated by the user's code from 'output.txt'
-        // This file is in the mounted temporary directory on your host machine.
-        let actualOutput = '';
-        try {
-            actualOutput = await fs.readFile(outputFilePath, 'utf8');
-        } catch (readError) {
-            console.error(`Could not read output file for ${submissionId}:`, readError.message);
-            // This might happen if compilation failed and exec_code was never created
-            // Or if the program crashed before writing anything.
         }
 
-        // 7. Determine the judging verdict
-        let verdict = 'Unknown Error';
-        let detailMessage = '';
 
-        if (stderr) {
-            // Check for compiler errors
-            if (stderr.includes("error:")) {
-                verdict = "Compile Error";
-                detailMessage = "Compilation failed.";
-            } else if (stderr.includes("Killed")) {
-                // Docker often reports "Killed" if memory limit exceeded
-                verdict = "Memory Limit Exceeded";
-                detailMessage = "Program used too much memory.";
-            } else if (stderr.includes("timeout")) {
-                // If exec timeout from Node.js child_process kicks in
-                verdict = "Time Limit Exceeded (Server Timeout)";
-                detailMessage = "Judging process exceeded server-side time limit.";
+        for (let i = 0; i < testCases.length; i++) {
+            const { input, expectedOutput, isSample } = testCases[i];
+            const inputFilePath = path.join(submissionTempDir, `input_${i}.txt`);
+            const outputFilePath = path.join(submissionTempDir, `output_${i}.txt`);
+            const errorFilePath = path.join(submissionTempDir, `error_${i}.txt`);
+
+            await fs.writeFile(inputFilePath, input);
+
+            const dockerRunCmd = `docker run --rm -v "${submissionTempDir}:/usr/src/app" ${dockerImage} /bin/bash -c "timeout ${timeLimit / 1000} ${runCommand} < /usr/src/app/input_${i}.txt > /usr/src/app/output_${i}.txt 2> /usr/src/app/error_${i}.txt"`;
+
+            let userOutput = '';
+            let stderrOutput = '';
+            let testVerdict = 'Accepted';
+            let message = '';
+            let executionTime = 0; // Placeholder for now, actual measurement is complex
+            let memoryUsed = 'N/A'; // Placeholder for now, actual measurement is complex
+
+            try {
+                // Measure execution time (simple approach, for more accurate, use `time` command inside container)
+                const startTime = process.hrtime.bigint();
+                await executeShellCommand(dockerRunCmd);
+                const endTime = process.hrtime.bigint();
+                executionTime = Number(endTime - startTime) / 1_000_000; // Convert nanoseconds to milliseconds
+
+                userOutput = await fs.readFile(outputFilePath, 'utf8');
+                stderrOutput = await fs.readFile(errorFilePath, 'utf8');
+
+                // Basic output comparison
+                if (stderrOutput.trim() !== '') {
+                    testVerdict = 'Runtime Error';
+                    message = 'Program terminated with runtime errors.';
+                    overallVerdict = overallVerdict === 'Accepted' ? testVerdict : overallVerdict; // Prioritize worse verdict
+                } else if (userOutput.trim() !== expectedOutput.trim()) {
+                    testVerdict = 'Wrong Answer';
+                    message = 'Output does not match expected output.';
+                    overallVerdict = overallVerdict === 'Accepted' ? testVerdict : overallVerdict; // Prioritize worse verdict
+                } else {
+                    testCasesPassedCount++;
+                }
+
+            } catch (runErr) {
+                userOutput = await fs.readFile(outputFilePath, 'utf8').catch(() => ''); // Try to read output even on error
+                stderrOutput = await fs.readFile(errorFilePath, 'utf8').catch(() => ''); // Try to read stderr even on error
+
+                if (runErr.message.includes('Command failed: docker run') && runErr.message.includes('timeout')) {
+                    testVerdict = 'Time Limit Exceeded';
+                    message = `Execution exceeded time limit of ${timeLimit / 1000} seconds.`;
+                    overallVerdict = overallVerdict === 'Accepted' ? testVerdict : overallVerdict;
+                } else if (runErr.message.includes('Memory Limit Exceeded')) { // You'd need specific Docker resource limits for this
+                    testVerdict = 'Memory Limit Exceeded';
+                    message = 'Execution exceeded memory limit.';
+                    overallVerdict = overallVerdict === 'Accepted' ? testVerdict : overallVerdict;
+                } else {
+                    testVerdict = 'Runtime Error';
+                    message = `An error occurred during execution: ${runErr.message.split('\n')[0]}`;
+                    overallVerdict = overallVerdict === 'Accepted' ? testVerdict : overallVerdict;
+                }
+            } finally {
+                results.push({
+                    testCase: i + 1,
+                    status: testVerdict,
+                    message: message,
+                    executionTime: executionTime,
+                    memoryUsed: memoryUsed,
+                    expectedOutput: expectedOutput.trim(),
+                    userOutput: userOutput.trim(),
+                    stderr: stderrOutput.trim(),
+                    isSample: isSample
+                });
+                // Clean up files for this test case (optional, can clean all at once at the end)
+                await fs.unlink(inputFilePath).catch(() => {});
+                await fs.unlink(outputFilePath).catch(() => {});
+                await fs.unlink(errorFilePath).catch(() => {});
             }
-            else {
-                verdict = "Runtime Error";
-                detailMessage = "Program crashed during execution.";
-            }
-            console.error(`Container stderr for ${submissionId}:`, stderr);
-        } else if (stdout.includes("Command failed")) { // Catch if docker exec itself failed
-             verdict = "Execution Failed";
-             detailMessage = "Docker command failed to execute.";
-        } else if (actualOutput.trim() === expectedOutput.trim()) {
-            verdict = 'Accepted';
-            detailMessage = "Your code produced the correct output.";
-        } else {
-            verdict = 'Wrong Answer';
-            detailMessage = "Your code's output does not match the expected output.";
         }
 
-        // 8. Send the judging result back to the client
+
+        // Final response
         res.json({
-            submissionId,
-            status: 'completed',
-            verdict,
-            detail: detailMessage,
-            actualOutput: actualOutput.trim(),
-            expectedOutput: expectedOutput.trim(),
-            // stdout and stderr from the 'docker run' command itself, not from inside the container program
-            dockerCommandOutput: stdout.trim(),
-            dockerCommandErrors: stderr.trim()
+            submissionId: submissionIdToUse,
+            status: 'completed', // Judge server completed its work
+            verdict: overallVerdict,
+            compilerOutput: compilerOutput.trim(),
+            executionTime: overallExecutionTime, // Max time across all test cases
+            memoryUsed: overallMemoryUsed, // Max memory across all test cases
+            testCasesPassed: testCasesPassedCount,
+            totalTestCases: testCases.length,
+            detailedResults: results,
+            detail: overallVerdict === 'Accepted' ? 'Solution accepted!' : `Solution failed: ${overallVerdict}`
         });
 
     } catch (error) {
-        console.error(`Judging failed for ${submissionId}:`, error);
-
-        let errorMessage = 'An unexpected error occurred during judging.';
-        let errorDetails = error.message;
-        let verdict = 'Internal Error';
-
-        if (error.code === 'ERR_CHILD_PROCESS_STDIO_MAXBUFFER') {
-            errorMessage = 'Output buffer exceeded. Program produced too much output.';
-            verdict = 'Output Limit Exceeded';
-        } else if (error.killed && error.signal === 'SIGTERM') {
-            errorMessage = 'Program was terminated due to timeout.';
-            verdict = 'Time Limit Exceeded';
-        } else if (error.message.includes('No such file or directory')) {
-             errorMessage = 'Internal error: files not prepared correctly for judging container.';
-             verdict = 'Internal Error';
-        }
-
-
+        console.error('Judge Server Internal Error:', error);
         res.status(500).json({
-            submissionId,
+            submissionId: submissionIdToUse,
             status: 'failed',
-            verdict: verdict,
-            error: errorMessage,
-            details: errorDetails,
-            cmd: error.cmd || 'N/A' // The command that failed, if available
+            verdict: 'Internal Error',
+            error: 'An unexpected error occurred during judging.',
+            details: error.message, // Provide more details for debugging
+            cmd: error.command || '' // If executeShellCommand provided a command field
         });
-
     } finally {
-        // 9. Clean up the temporary directory
-        // This is important to free up disk space and keep your system tidy
-        try {
-            if (await fs.stat(tempDirPath).catch(() => null)) { // Check if directory exists
-                await fs.rm(tempDirPath, { recursive: true, force: true });
-                console.log(`Cleaned up temp directory: ${tempDirPath}`);
-            }
-        } catch (cleanupError) {
-            console.error(`Error cleaning up temp directory ${tempDirPath}:`, cleanupError.message);
+        // Clean up the temporary submission directory
+        if (submissionTempDir && submissionTempDir.startsWith(TEMP_CODE_DIR)) { // Safety check
+            await fs.rm(submissionTempDir, { recursive: true, force: true }).catch(console.error);
         }
     }
 });
 
-// Start the Node.js server
-app.listen(PORT, () => {
-    console.log(`Judge Server running on http://localhost:${PORT}`);
-    console.log('Ready to receive judging requests...');
+const JUDGE_PORT = process.env.JUDGE_PORT || 3001; // Ensure this matches your backend's proxy target
+app.listen(JUDGE_PORT, () => {
+    console.log(`Judge Server listening on port ${JUDGE_PORT}!`);
 });

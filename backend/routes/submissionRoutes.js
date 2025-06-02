@@ -4,15 +4,16 @@ import express from 'express';
 const router = express.Router();
 
 import {
-    createSubmission, // This controller will now handle the execution
+    createSubmission,       // This controller will now ONLY create the submission record in DB (e.g., status: 'Pending')
     getUserSubmissions,
     getSubmissionById,
-    updateSubmissionStatus
+    updateSubmissionDetails // <--- RENAMED: This controller will update status AND all judging results
 } from '../controllers/submissionController.js';
-import { authenticateUser, authorizeRoles } from '../middleware/authMiddleware.js';
+import { authenticateUser } from '../middleware/authMiddleware.js'; // Assuming authorizeRoles is not directly needed on these endpoints for now
 
-// Create a new submission (user must be authenticated)
-// This route will now trigger the direct code execution
+// Create a new submission record in the database.
+// The frontend calls this first. It saves the code, language, problemId, etc.
+// The submission will initially have a 'Pending' status.
 router.post('/', authenticateUser, createSubmission);
 
 // Get submissions for the authenticated user
@@ -21,9 +22,9 @@ router.get('/me', authenticateUser, getUserSubmissions);
 // Get a single submission by ID (user or admin)
 router.get('/:id', authenticateUser, getSubmissionById);
 
-// Update submission status - THIS IS AN INTERNAL ROUTE FOR THE JUDGE SERVICE
-// (You mentioned removing judge service, so this might become less relevant or change role)
-// For now, keep it as is, but consider its future use.
-router.put('/:id/status', updateSubmissionStatus);
+// Update submission details (including status, verdict, time, memory, detailed results, etc.).
+// This route will be called INTERNALLY by your main backend's '/api/judge' route
+// after it receives the full judging results from the Docker Judge Server.
+router.put('/:id', authenticateUser, updateSubmissionDetails); // <--- Endpoint changed to /:id for a full update
 
 export default router;

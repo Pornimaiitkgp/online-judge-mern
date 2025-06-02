@@ -6,19 +6,22 @@ import { useParams } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 import Editor from '@monaco-editor/react'; // Import Monaco Editor
 
+// Ensure axios base URL is set up globally, e.g., in src/main.jsx or a config file:
+// axios.defaults.baseURL = 'http://localhost:3000'; // Your backend server URL
+
 const ProblemDetail = () => {
-    const { id } = useParams();
+    const { id } = useParams(); // This 'id' is problemId
     const navigate = useNavigate();
-    const [problem, setProblem] = useState(null);
+    const [problem, setProblem] = useState(null); // Stores fetched problem details
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [code, setCode] = useState(''); // Stores the code from the editor
     const [language, setLanguage] = useState('cpp'); // Default language, maps to Monaco language IDs
-    // We'll now store the *full* submission result directly here for display
-    const [submissionResult, setSubmissionResult] = useState(null);
-    const [submitLoading, setSubmitLoading] = useState(false); // New state for submission loading
-    const [submitError, setSubmitError] = useState(''); // Corrected state declaration for submitError
-    const [submitMessage, setSubmitMessage] = useState(''); // Corrected state declaration for submitMessage
+
+    const [judgeResult, setJudgeResult] = useState(null); // Stores the final result from the judge server
+    const [submitLoading, setSubmitLoading] = useState(false);
+    const [submitError, setSubmitError] = useState('');
+    const [submitMessage, setSubmitMessage] = useState('');
 
     // Map your backend languages to Monaco Editor's language IDs
     const languageMap = {
@@ -99,7 +102,7 @@ if __name__ == "__main__":
         }
     };
 
-    // Helper for status color (can be reused from SubmissionDetail)
+    // Helper for status color
     const getStatusColor = (status) => {
         switch (status) {
             case 'Accepted': return 'green';
@@ -109,9 +112,10 @@ if __name__ == "__main__":
             case 'Runtime Error': return 'darkred';
             case 'Compilation Error': return 'brown';
             case 'Pending': return 'blue';
-            case 'Compiling': return 'deepskyblue'; // New status
-            case 'Judging': return 'violet'; // New status
-            case 'No Test Cases': return 'gray'; // New status
+            case 'Compiling': return 'deepskyblue';
+            case 'Judging': return 'violet';
+            case 'No Test Cases': return 'gray';
+            case 'Internal Error': return 'black';
             case 'Error': return 'black'; // For general backend errors
             default: return 'gray';
         }
@@ -119,16 +123,16 @@ if __name__ == "__main__":
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setSubmitMessage(''); // Clear previous messages
-        setSubmitError(''); // Clear previous errors
-        setSubmissionResult(null); // Clear previous submission results
-        setSubmitLoading(true); // Start loading
+        setSubmitMessage('');
+        setSubmitError('');
+        setJudgeResult(null); // Clear previous judging results
+        setSubmitLoading(true);
 
         try {
             const token = localStorage.getItem('token');
             if (!token) {
                 setSubmitError('You must be logged in to submit code.');
-                navigate('/login');
+                navigate('/signin');
                 return;
             }
 
@@ -139,34 +143,71 @@ if __name__ == "__main__":
                 }
             };
 
-            const submissionData = {
-                problemId: id,
+            // --- STEP 1: Create a pending submission record in your main backend database ---
+            // This calls your /api/submissions route (which uses createSubmission controller)
+            const initialSubmissionResponse = await axios.post('/api/submissions', {
+                problemId: id, // Pass problemId as expected by your backend
                 code,
                 language
+                // Initial status and submittedAt are handled by the backend controller
+            }, config);
+
+            if (!initialSubmissionResponse.data.success) {
+                throw new Error(initialSubmissionResponse.data.message || 'Failed to create initial submission record.');
+            }
+            const createdSubmission = initialSubmissionResponse.data.submission;
+            const problemDetailsForJudge = initialSubmissionResponse.data.problemDetailsForJudge;
+
+            // --- STEP 2: Send the submission to your main backend's /api/judge endpoint ---
+            // This endpoint will proxy the request to the Docker Judge Server.
+            const judgeRequestData = {
+                submissionId: createdSubmission._id, // Pass the submission ID so the backend can update it
+                code,
+                language,
+                // Use the problem details fetched by the backend in Step 1
+                testCases: problemDetailsForJudge.testCases,
+                timeLimit: problemDetailsForJudge.timeLimit,
+                memoryLimit: problemDetailsForJudge.memoryLimit
             };
 
-            const response = await axios.post('/api/submissions', submissionData, config);
+            const judgeResponse = await axios.post('/api/judge', judgeRequestData, config); // Backend URL is implied by axios.defaults.baseURL
 
-            // Directly set the submission result received from the backend
-            // Assuming the backend sends the full submission object or a relevant part
-            if (response.data.success) {
-                setSubmissionResult(response.data.submission); // Assuming 'submission' key holds the object
-                setSubmitMessage('Code submitted successfully!');
-                // Optional: Redirect to submission details after a short delay
-                // setTimeout(() => navigate(`/submissions/${response.data.submission.id}`), 2000);
-            } else {
-                setSubmitError(response.data.message || 'Submission failed.');
+            if (!judgeResponse.data || judgeResponse.data.status === 'failed') {
+                throw new Error(judgeResponse.data.error || 'Judging failed unexpectedly or returned no data.');
             }
+
+            const finalJudgeResult = judgeResponse.data;
+
+            // --- STEP 3: Update the submission in your main backend database with the judging result ---
+            // This calls your /api/submissions/:id route (which uses updateSubmissionDetails controller)
+            await axios.put(`/api/submissions/${createdSubmission._id}`, {
+                verdict: finalJudgeResult.verdict,
+                actualOutput: finalJudgeResult.actualOutput,
+                expectedOutput: finalJudgeResult.expectedOutput,
+                dockerCommandOutput: finalJudgeResult.dockerCommandOutput,
+                dockerCommandErrors: finalJudgeResult.dockerCommandErrors,
+                compilerOutput: finalJudgeResult.compilerOutput, // Ensure this field is included if it comes from judge server
+                status: finalJudgeResult.status, // The judge server's overall status (e.g., 'completed')
+                executionTime: finalJudgeResult.executionTime,
+                memoryUsed: finalJudgeResult.memoryUsed,
+                testCasesPassed: finalJudgeResult.testCasesPassed,
+                totalTestCases: finalJudgeResult.totalTestCases,
+                detailedResults: finalJudgeResult.detailedResults
+            }, config);
+
+            setJudgeResult(finalJudgeResult); // Display the judge server's result on the page
+            setSubmitMessage('Code submitted and judged successfully!');
 
         } catch (err) {
-            console.error('Error submitting code:', err);
-            setSubmitError(err.response?.data?.message || 'Failed to submit code. Please try again.');
+            console.error('Error during submission process:', err);
+            setSubmitError(err.response?.data?.message || err.message || 'Failed to submit code. Please try again.');
             // If the error response itself contains detailed results (e.g., if an internal error occurs after some judging)
-            if (err.response?.data?.submission) {
-                setSubmissionResult(err.response.data.submission);
+            // This line specifically for displaying errors coming back from the judge or backend proxy
+            if (err.response?.data) {
+                setJudgeResult(err.response.data); // Display partial results/errors from judge
             }
         } finally {
-            setSubmitLoading(false); // Stop loading
+            setSubmitLoading(false);
         }
     };
 
@@ -266,45 +307,57 @@ if __name__ == "__main__":
                 </button>
             </form>
 
-            {/* --- Display Submission Results Here --- */}
-            {submissionResult && (
+            {/* --- Display JUDGE SERVER Results Here --- */}
+            {judgeResult && (
                 <div style={{ marginTop: '40px', border: '1px solid #ddd', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}>
-                    <h2>Submission Results</h2>
-                    <p><strong>Overall Status:</strong> <span style={{ color: getStatusColor(submissionResult.status), fontWeight: 'bold' }}>{submissionResult.status}</span></p>
-                    {submissionResult.executionTime > 0 && (
-                        <p><strong>Max Execution Time:</strong> {submissionResult.executionTime.toFixed(2)} ms</p>
-                    )}
-                    {submissionResult.memoryUsed && (
-                        <p><strong>Memory Used:</strong> {submissionResult.memoryUsed}</p>
-                    )}
-                    <p><strong>Test Cases Passed:</strong> {submissionResult.testCasesPassed} / {submissionResult.totalTestCases}</p>
+                    <h2>Judging Result (from Judge Server)</h2>
+                    {/* Use optional chaining for properties that might be undefined */}
+                    <p><strong>Status:</strong> <span style={{ color: getStatusColor(judgeResult.status), fontWeight: 'bold' }}>{judgeResult.status}</span></p>
+                    <p><strong>Verdict:</strong> <span style={{ color: getStatusColor(judgeResult.verdict), fontWeight: 'bold' }}>{judgeResult.verdict || 'N/A'}</span></p>
+                    <p><strong>Details:</strong> {judgeResult.detail || 'N/A'}</p>
 
-                    {submissionResult.status === 'Compilation Error' && submissionResult.output && (
-                        <div style={{ marginTop: '20px' }}>
-                            <h3>Compilation Output:</h3>
-                            <pre style={{ backgroundColor: '#ffe0e0', padding: '10px', borderRadius: '5px', overflowX: 'auto', border: '1px solid red', color: 'darkred' }}>
-                                {submissionResult.output}
-                            </pre>
-                        </div>
+                    {judgeResult.actualOutput && (
+                        <>
+                            <p><strong>Actual Output:</strong></p>
+                            <pre style={{ backgroundColor: '#e9e9e9', padding: '10px', borderRadius: '3px', overflowX: 'auto' }}>{judgeResult.actualOutput}</pre>
+                        </>
                     )}
-
-                    {submissionResult.detailedResults && submissionResult.detailedResults.length > 0 && (
+                    {judgeResult.expectedOutput && (
+                        <>
+                            <p><strong>Expected Output:</strong></p>
+                            <pre style={{ backgroundColor: '#e9e9e9', padding: '10px', borderRadius: '3px', overflowX: 'auto' }}>{judgeResult.expectedOutput}</pre>
+                        </>
+                    )}
+                    {judgeResult.dockerCommandOutput && (
+                        <>
+                            <p><strong>Docker Command Output:</strong></p>
+                            <pre style={{ backgroundColor: '#e9e9e9', padding: '10px', borderRadius: '3px', overflowX: 'auto' }}>{judgeResult.dockerCommandOutput}</pre>
+                        </>
+                    )}
+                    {judgeResult.dockerCommandErrors && (
+                        <>
+                            <p><strong>Docker Command Errors:</strong></p>
+                            <pre style={{ backgroundColor: '#ffe0e0', padding: '10px', borderRadius: '3px', overflowX: 'auto', border: '1px solid red', color: 'darkred' }}>{judgeResult.dockerCommandErrors}</pre>
+                        </>
+                    )}
+                    {/* Added compilerOutput check as well */}
+                    {judgeResult.compilerOutput && (
+                        <>
+                            <p><strong>Compiler Output:</strong></p>
+                            <pre style={{ backgroundColor: '#ffe0e0', padding: '10px', borderRadius: '3px', overflowX: 'auto', border: '1px solid red', color: 'darkred' }}>{judgeResult.compilerOutput}</pre>
+                        </>
+                    )}
+                    {judgeResult.detailedResults && judgeResult.detailedResults.length > 0 && (
                         <div style={{ marginTop: '20px' }}>
-                            <h3>Sample Test Case Results:</h3>
-                            {submissionResult.detailedResults.filter(r => r.isSample).map((tcResult, index) => ( // Filter for sample tests
+                            <h3>Test Case Results:</h3>
+                            {judgeResult.detailedResults.map((tcResult, index) => (
                                 <div key={index} style={{ border: `1px solid ${getStatusColor(tcResult.status)}`, padding: '15px', marginBottom: '15px', borderRadius: '5px', backgroundColor: '#fdfdfd' }}>
                                     <h4>Test Case {tcResult.testCase}: <span style={{ color: getStatusColor(tcResult.status), float: 'right' }}>{tcResult.status}</span></h4>
                                     {tcResult.message && tcResult.status !== 'Passed' && (
                                         <p style={{ color: getStatusColor(tcResult.status), fontWeight: 'bold' }}>Reason: {tcResult.message}</p>
                                     )}
-                                    <p><strong>Execution Time:</strong> {tcResult.executionTime ? `${tcResult.executionTime.toFixed(2)} ms` : 'N/A'}</p>
-                                    {/* <p><strong>Memory Used:</strong> {tcResult.memoryUsed ? `${tcResult.memoryUsed} KB` : 'N/A'}</p> */}
-
-                                    <div style={{ marginTop: '10px' }}>
-                                        <h4>Input:</h4>
-                                        <pre style={{ backgroundColor: '#e9e9e9', padding: '10px', borderRadius: '3px', overflowX: 'auto' }}>{tcResult.input}</pre>
-                                    </div>
-
+                                    {/* Ensure executionTime is a number before toFixed */}
+                                    <p><strong>Execution Time:</strong> {typeof tcResult.executionTime === 'number' ? `${tcResult.executionTime.toFixed(2)} ms` : 'N/A'}</p>
                                     {tcResult.status !== 'Accepted' && tcResult.status !== 'Compilation Error' && (
                                         <>
                                             <div style={{ marginTop: '10px' }}>
@@ -326,9 +379,6 @@ if __name__ == "__main__":
                                 </div>
                             ))}
                         </div>
-                    )}
-                    {!submissionResult.detailedResults || submissionResult.detailedResults.filter(r => r.isSample).length === 0 && submissionResult.status !== 'Compilation Error' && (
-                        <p>No sample test case results to display (might be due to compilation error or no samples defined).</p>
                     )}
                 </div>
             )}

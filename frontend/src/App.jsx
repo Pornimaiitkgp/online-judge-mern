@@ -17,6 +17,8 @@ import ProblemList from './pages/ProblemList.jsx';
 import CreateProblem from './pages/CreateProblem.jsx';
 import ProblemDetail from './pages/ProblemDetail.jsx';
 import MySubmissions from './pages/MySubmissions.jsx';
+import axios from 'axios';
+axios.defaults.baseURL = 'http://localhost:3000';
 
 
 function App() {

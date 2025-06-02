@@ -7,10 +7,23 @@ const submissionSchema = new mongoose.Schema({
     language: { type: String, enum: ['cpp', 'python', 'java'], required: true },
     status: {
         type: String,
-        enum: ['Pending', 'Compiling', 'Judging', 'Accepted', 'Wrong Answer', 'Time Limit Exceeded', 'Memory Limit Exceeded', 'Runtime Error', 'Compilation Error', 'Error', 'No Test Cases'], // Added 'No Test Cases'
+        enum: [
+            'Pending',
+            'Compiling',
+            'Judging',
+            'Accepted',
+            'Wrong Answer',
+            'Time Limit Exceeded',
+            'Memory Limit Exceeded',
+            'Runtime Error',
+            'Compilation Error',
+            'Error',
+            'No Test Cases',
+            'Failed' // Added 'Failed' as judge server can return 'status: failed'
+        ],
         default: 'Pending'
     },
-    output: { type: String }, // General message or first error output
+    output: { type: String }, // General message or first error output (can include compiler errors)
     executionTime: { type: Number }, // In milliseconds (max time across all test cases)
     memoryUsed: { type: String }, // In kilobytes (still placeholder, harder to get without Docker)
     testCasesPassed: { type: Number, default: 0 },
@@ -20,11 +33,33 @@ const submissionSchema = new mongoose.Schema({
     detailedResults: { // Store the array from judge service
         type: [{
             testCase: { type: Number }, // Changed to Number as it was an index
-            status: { type: String, enum: ['Passed', 'Wrong Answer', 'Time Limit Exceeded', 'Memory Limit Exceeded', 'Runtime Error', 'Error'] },
+            // *** IMPORTANT CHANGE HERE ***
+            // Added 'Accepted' to match judge_server's output for individual test cases.
+            // Also, included other relevant states for comprehensive reporting.
+            status: {
+                type: String,
+                enum: [
+                    'Accepted', // Corresponds to 'Accepted' from judge_server
+                    'Wrong Answer',
+                    'Time Limit Exceeded',
+                    'Memory Limit Exceeded',
+                    'Runtime Error',
+                    'Compilation Error', // Judge server might return this for specific test case if it's a global error
+                    'Internal Error', // From judge server, if something goes wrong for a test case
+                    'Error', // Generic error
+                    'Passed', // If you prefer 'Passed' over 'Accepted' for individual test cases
+                    'Skipped', // If you implement skipping
+                    'Pending' // If a test case could be in pending state
+                ],
+                required: true
+            },
             message: { type: String },
-            input: { type: String },
+            // Removed 'input' from here to reduce storage, as it's usually already in problem details.
+            // Add back if you specifically need the submitted input for detailed results.
+            // input: { type: String },
             expectedOutput: { type: String },
             userOutput: { type: String },
+            stderr: { type: String }, // Added stderr for individual test case output
             executionTime: { type: Number }, // Execution time for this specific test case
             memoryUsed: { type: String }, // Memory used for this specific test case (placeholder)
             isSample: { type: Boolean, default: false } // To differentiate sample vs. hidden test case results
