@@ -41,6 +41,13 @@ export default function Header() {
               <li className='hidden sm:inline text-slate-700 hover:underline'>Create Problem</li>
             </Link>
           )}
+          
+          {/* NEW: Conditional Link for My Submissions (User Logged In Only) */}
+          {currentUser && ( // Only show if a user is logged in
+            <Link to='/mysubmissions'>
+              <li className='hidden sm:inline text-slate-700 hover:underline'>My Submissions</li>
+            </Link>
+          )}
 
           {/* Profile/Sign In Link Logic */}
           {currentUser ? (

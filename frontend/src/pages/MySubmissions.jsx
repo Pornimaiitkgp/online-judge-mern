@@ -16,14 +16,14 @@ const MySubmissions = () => {
             if (!token) {
                 setError('You must be logged in to view your submissions.');
                 setLoading(false);
-                navigate('/login'); // Redirect to login
+                navigate('/login');
                 return;
             }
 
             try {
                 const config = {
                     headers: {
-                        'Authorization': `Bearer ${token}` 
+                        'Authorization': `Bearer ${token}`
                     }
                 };
                 const response = await axios.get('/api/submissions/me', config);
@@ -38,6 +38,24 @@ const MySubmissions = () => {
 
         fetchSubmissions();
     }, [navigate]);
+
+    // Helper for status color
+    const getStatusColor = (status) => {
+        switch (status) {
+            case 'Accepted': return 'green';
+            case 'Wrong Answer': return 'red';
+            case 'Time Limit Exceeded': return 'orange';
+            case 'Memory Limit Exceeded': return 'purple';
+            case 'Runtime Error': return 'darkred';
+            case 'Compilation Error': return 'brown';
+            case 'Pending': return 'blue';
+            case 'Compiling': return 'deepskyblue';
+            case 'Judging': return 'violet';
+            case 'No Test Cases': return 'gray';
+            case 'Error': return 'black'; // For general backend errors
+            default: return 'gray';
+        }
+    };
 
     if (loading) {
         return <div style={{ padding: '20px' }}>Loading submissions...</div>;
@@ -59,6 +77,7 @@ const MySubmissions = () => {
                             <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Problem</th>
                             <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Language</th>
                             <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Status</th>
+                            <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Test Cases</th>
                             <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Time</th>
                             <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Memory</th>
                             <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Submitted At</th>
@@ -69,14 +88,17 @@ const MySubmissions = () => {
                         {submissions.map((submission) => (
                             <tr key={submission._id}>
                                 <td style={{ border: '1px solid #ddd', padding: '8px' }}>
-                                    <Link to={`/problems/${submission.problem._id}`}>{submission.problem.title}</Link>
+                                    {/* Ensure submission.problem exists before accessing its properties */}
+                                    <Link to={`/problems/${submission.problem?._id}`}>{submission.problem?.title || 'N/A'}</Link>
                                 </td>
                                 <td style={{ border: '1px solid #ddd', padding: '8px' }}>{submission.language.toUpperCase()}</td>
-                                <td style={{ border: '1px solid #ddd', padding: '8px' }}>{submission.status}</td>
-                                <td style={{ border: '1px solid #ddd', padding: '8px' }}>{submission.executionTime ? `${submission.executionTime} ms` : 'N/A'}</td>
+                                <td style={{ border: '1px solid #ddd', padding: '8px', color: getStatusColor(submission.status), fontWeight: 'bold' }}>{submission.status}</td>
+                                <td style={{ border: '1px solid #ddd', padding: '8px' }}>{submission.testCasesPassed}/{submission.totalTestCases}</td>
+                                <td style={{ border: '1px solid #ddd', padding: '8px' }}>{submission.executionTime ? `${submission.executionTime.toFixed(2)} ms` : 'N/A'}</td>
                                 <td style={{ border: '1px solid #ddd', padding: '8px' }}>{submission.memoryUsed ? `${submission.memoryUsed} KB` : 'N/A'}</td>
                                 <td style={{ border: '1px solid #ddd', padding: '8px' }}>{new Date(submission.submittedAt).toLocaleString()}</td>
                                 <td style={{ border: '1px solid #ddd', padding: '8px' }}>
+                                    {/* This link was confirmed to be correct based on your network tab */}
                                     <Link to={`/submissions/${submission._id}`}>View</Link>
                                 </td>
                             </tr>

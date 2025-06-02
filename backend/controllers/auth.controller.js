@@ -75,9 +75,16 @@ export const google = async (req, res, next) => {
 
 export const signOut = async (req, res, next) => {
   try {
-    res.clearCookie('access_token');
+    res.clearCookie('access_token', {
+    httpOnly: true, // Must match how it was set
+    path: '/',
+  });
+      res.status(200).json({ success: true, message: 'User has been logged out!' });
+
     res.status(200).json('User has been logged out!');
-  } catch (error) {
-    next(error);
+    } catch (error) {
+    console.error('Sign out error:', error); // Log the specific error for debugging
+    next(error); // Pass the error to your Express error handling middleware
   }
 };
+  

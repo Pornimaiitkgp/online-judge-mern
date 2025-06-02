@@ -1,3 +1,4 @@
+// client/src/App.jsx
 
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
@@ -9,6 +10,7 @@ import About from "./pages/About.jsx";
 import Header from "./components/Header.jsx";
 import PrivateRoute from "./components/PrivateRoute.jsx"; // Reverted to general private route
 import AdminRoute from "./components/AdminRoute.jsx";  
+import SubmissionDetail from './pages/SubmissionDetail.jsx';
 
 // Imports for the Online Judge features
 import ProblemList from './pages/ProblemList.jsx';
@@ -29,6 +31,7 @@ function App() {
                 <Route path="/problems" element={<ProblemList />} />
                 <Route path="/problems/:id" element={<ProblemDetail />} />
                 <Route path="/mysubmissions" element={<MySubmissions />} />
+                <Route path="/submissions/:id" element={<SubmissionDetail />} />
 
                 {/* Authentication Routes */}
                 <Route path="/signin" element={<SignIn />} />

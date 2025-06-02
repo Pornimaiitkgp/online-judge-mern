@@ -4,7 +4,7 @@ const ProblemSchema = new mongoose.Schema({
     title: {
         type: String,
         required: true,
-        unique: true, // Ensure each problem has a unique title
+        unique: true,
         trim: true
     },
     description: {
@@ -13,7 +13,7 @@ const ProblemSchema = new mongoose.Schema({
     },
     difficulty: {
         type: String,
-        enum: ['Easy', 'Medium', 'Hard'], // Restrict difficulty to these values
+        enum: ['Easy', 'Medium', 'Hard'],
         required: true
     },
     inputFormat: {
@@ -24,13 +24,13 @@ const ProblemSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    sampleTestCases: [ // Array of objects for sample tests to show users
+    sampleTestCases: [
         {
             input: { type: String, required: true },
             output: { type: String, required: true }
         }
     ],
-    hiddenTestCases: [ // Array of objects for hidden tests (for automated judging)
+    hiddenTestCases: [
         {
             input: { type: String, required: true },
             output: { type: String, required: true }
@@ -40,11 +40,18 @@ const ProblemSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    // Reference to the user who created the problem
+    timeLimit: { // In milliseconds
+        type: Number,
+        default: 2000, // Default to 2 seconds if not specified
+    },
+    memoryLimit: { // In MB (Note: Primarily for display/conceptual for now without Docker)
+        type: Number,
+        default: 256, // Default to 256 MB if not specified
+    },
     createdBy: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'User', // Links to your 'User' model
-        required: true // Assuming problems must be created by a logged-in user
+        ref: 'User',
+        required: true
     },
     createdAt: {
         type: Date,
@@ -52,6 +59,5 @@ const ProblemSchema = new mongoose.Schema({
     }
 });
 
-// IMPORTANT: Export the model as the default export for ES Module compatibility
 const Problem = mongoose.model('Problem', ProblemSchema);
 export default Problem;
