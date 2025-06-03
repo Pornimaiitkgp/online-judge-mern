@@ -1,0 +1,213 @@
+/* Home.css */
+
+/* Important: Some global styles like 'body' font-family, background-color, etc.,
+   should ideally be in your main App.css or index.css.
+   I've included basic ones here, but feel free to move them if you have global styles. */
+
+body {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Poppins', sans-serif; /* Ensure Poppins is linked in your public/index.html or global CSS */
+    line-height: 1.6;
+    background-color: #f4f7f6; /* Light grey background */
+    color: #333;
+}
+
+.home-container {
+    width: 90%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px 0;
+}
+
+/* Header */
+.home-header {
+    background-color: #2c3e50; /* Dark blue/grey */
+    color: #fff;
+    padding: 15px 0;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.home-header .home-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.home-logo {
+    font-size: 1.8em;
+    font-weight: 600;
+    color: #3498db; /* A vibrant blue for the logo */
+}
+
+.home-nav ul {
+    list-style: none;
+}
+
+.home-nav ul li {
+    display: inline-block;
+    margin-left: 25px;
+}
+
+.home-nav ul li a {
+    color: #fff;
+    text-decoration: none;
+    font-weight: 400;
+    transition: color 0.3s ease;
+}
+
+.home-nav ul li a:hover,
+.home-nav ul li a.current {
+    color: #3498db; /* Highlight color on hover/current */
+}
+
+/* Main Content */
+.home-main {
+    flex-grow: 1; /* Helps footer stick to bottom if body is display: flex and min-height: 100vh */
+}
+
+/* Hero Section */
+.home-hero {
+    background: linear-gradient(to right, #34495e, #2c3e50); /* Dark gradient */
+    color: #fff;
+    text-align: center;
+    padding: 80px 20px;
+    border-bottom-left-radius: 50px; /* Rounded corners for elegance */
+    border-bottom-right-radius: 50px;
+    margin-bottom: 40px;
+}
+
+.home-hero h2 {
+    font-size: 3em;
+    margin-bottom: 20px;
+    font-weight: 600;
+}
+
+.home-hero p {
+    font-size: 1.2em;
+    margin-bottom: 30px;
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
+    opacity: 0.9;
+}
+
+/* Buttons */
+.home-btn {
+    display: inline-block;
+    background-color: #3498db; /* Vibrant blue */
+    color: #fff;
+    padding: 12px 25px;
+    text-decoration: none;
+    border-radius: 5px;
+    font-weight: 600;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    border: none;
+    cursor: pointer;
+}
+
+.home-btn-primary:hover {
+    background-color: #2980b9; /* Slightly darker blue on hover */
+    transform: translateY(-2px); /* Slight lift effect */
+}
+
+/* Features Section */
+.home-features {
+    padding: 40px 0;
+    text-align: center;
+}
+
+.home-features .home-container {
+    display: flex;
+    justify-content: space-around;
+    flex-wrap: wrap; /* Allows items to wrap on smaller screens */
+    gap: 30px;
+}
+
+.home-feature-item {
+    background-color: #fff;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    flex: 1; /* Allows items to grow */
+    min-width: 280px; /* Minimum width for each item */
+    max-width: 350px; /* Max width to prevent them from getting too wide */
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.home-feature-item:hover {
+    transform: translateY(-5px); /* Slight lift on hover */
+    box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+}
+
+.home-feature-item h3 {
+    color: #2c3e50;
+    font-size: 1.5em;
+    margin-bottom: 15px;
+    font-weight: 600;
+}
+
+.home-feature-item p {
+    color: #555;
+    font-size: 0.95em;
+}
+
+/* Footer */
+.home-footer {
+    background-color: #333;
+    color: #bbb;
+    text-align: center;
+    padding: 20px 0;
+    margin-top: 40px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .home-header .home-container {
+        flex-direction: column;
+    }
+
+    .home-nav ul li {
+        margin: 0 10px;
+    }
+
+    .home-hero h2 {
+        font-size: 2.2em;
+    }
+
+    .home-hero p {
+        font-size: 1em;
+    }
+
+    .home-features .home-container {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .home-feature-item {
+        margin-bottom: 20px; /* Add space between stacked feature items */
+    }
+}
+
+@media (max-width: 480px) {
+    .home-logo {
+        font-size: 1.5em;
+    }
+
+    .home-nav ul li {
+        margin: 0 8px;
+    }
+
+    .home-hero h2 {
+        font-size: 1.8em;
+    }
+
+    .home-hero p {
+        font-size: 0.9em;
+    }
+
+    .home-btn {
+        padding: 10px 20px;
+    }
+}

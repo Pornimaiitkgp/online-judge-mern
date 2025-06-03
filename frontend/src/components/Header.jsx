@@ -23,17 +23,12 @@ export default function Header() {
           <FaSearch className='text-slate-600' />
         </form>
         <ul className='flex gap-4'>
-          <Link to='/'>
+          {/* <Link to='/'>
             <li className='hidden sm:inline text-slate-700 hover:underline'>Home</li>
-          </Link>
-          <Link to='/about'>
-            <li className='hidden sm:inline text-slate-700 hover:underline'>About</li>
-          </Link>
+          </Link> */}
+          
 
-          {/* NEW: Link to Problems List (General access) */}
-          <Link to='/problems'>
-            <li className='hidden sm:inline text-slate-700 hover:underline'>Problems</li>
-          </Link>
+          
 
           {/* NEW: Conditional Link for Create Problem (Admin Only) */}
           {currentUser && currentUser.isAdmin && (
