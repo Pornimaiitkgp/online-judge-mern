@@ -37,7 +37,7 @@ export default function Header() {
 
           {/* NEW: Conditional Link for Create Problem (Admin Only) */}
           {currentUser && currentUser.isAdmin && (
-            <Link to='/create-problem'> {/* Notice: /create-problem (singular) */}
+            <Link to='/admin/problems/new'> {/* Notice: /create-problem (singular) */}
               <li className='hidden sm:inline text-slate-700 hover:underline'>Create Problem</li>
             </Link>
           )}

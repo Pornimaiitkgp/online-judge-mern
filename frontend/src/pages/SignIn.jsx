@@ -1,17 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { signInStart, signInSuccess, signInFailure } from '../redux/user/userSlice';
 import axios from 'axios';
 
+import AuthContext from '../context/AuthContext.jsx'; // NEW: Import AuthContext
 
-import OAuth from '../components/OAuth'; // 
+import OAuth from '../components/OAuth.jsx'; // 
 
 export default function SignIn() {
   const [formData, setFormData] = useState({});
   const { loading, error } = useSelector((state) => state.user);
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const { login } = useContext(AuthContext); // NEW: Get the login function from AuthContext
+
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.id]: e.target.value });
@@ -42,6 +45,7 @@ export default function SignIn() {
 console.warn('SignIn handleSubmit: No token received from backend sign-in response. Check your backend auth.controller.js');      }
 
       dispatch(signInSuccess(data.user)); 
+      login(data.user, data.token); 
       navigate('/');
     } catch (error) {
       console.error('Sign-in error:', error);
