@@ -5,14 +5,18 @@ import dotenv from 'dotenv';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import fetch from 'node-fetch'; // <--- NEW: Import node-fetch for making HTTP requests
+import { aiCodeReview } from './aiCodeReview.js'; // Import your AI code review function
 
 import userRouter from './routes/user.route.js';
 import authRouter from './routes/auth.route.js';
 import problemRoutes from './routes/problemRoutes.js';
 import submissionRoutes from './routes/submissionRoutes.js';
+import aiRoutes from './routes/aiRoutes.js'; // Import your new AI routes
+
 
 import cookieParser from 'cookie-parser';
 import cors from 'cors'; // <--- NEW: Import cors for Cross-Origin Resource Sharing
+
 
 // Resolve __dirname in ES module
 const __filename = fileURLToPath(import.meta.url);
@@ -47,13 +51,20 @@ app.use(cors({
 
 
 app.use(express.json());
+app.use(cors());
 app.use(cookieParser());
+
 
 // Route handlers
 app.use('/api/auth', authRouter);
 app.use('/api/user', userRouter);
 app.use('/api/problems', problemRoutes);
 app.use('/api/submissions', submissionRoutes);
+app.use('/api/ai', aiRoutes);
+
+app.get('/', (req, res) => {
+    res.send('API is running...');
+});
 
 // --- NEW: Judge Proxy Endpoint ---
 const JUDGE_SERVER_URL = 'http://localhost:3001'; // Your Judge Server's URL
@@ -99,6 +110,22 @@ app.post('/api/judge', async (req, res, next) => {
     }
 });
 // --- END NEW: Judge Proxy Endpoint ---
+
+app.post("/ai-review", async (req,res) => {
+  const { code } = req.body;
+  if(code === undefined || code.trim() === "") {
+    return res.status(400).json({ success: false, message: "Code is required for AI review." });
+  }
+  try {
+    const review= await aiCodeReview(code);
+    res.status(200).json({"result": review});
+      }
+      catch (error) {
+        res.status(500).json({ success: false, error: error.message || error.toSring() || 'An error occured during executing code' });
+     
+    }
+  });
+
 
 
 // Global error handler
