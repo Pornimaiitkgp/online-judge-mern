@@ -103,3 +103,53 @@
     border-color: #dc3545;
     background-color: #ffe6e6;
 }
+
+/* SubmissionResultPage.css */
+
+/* Basic Button Styling */
+.ai-review-button {
+    background-color: #007bff; /* Primary blue color */
+    color: white; /* White text for contrast */
+    padding: 12px 25px; /* Comfortable padding */
+    border: none; /* No default border */
+    border-radius: 8px; /* Slightly rounded corners */
+    cursor: pointer; /* Indicates it's clickable */
+    font-size: 16px; /* Readable font size */
+    font-weight: 600; /* Slightly bolder text */
+    transition: background-color 0.3s ease, transform 0.1s ease; /* Smooth hover and click effects */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+    margin-top: 20px; /* Space above the button */
+    display: inline-block; /* Ensures margin works as expected */
+    text-decoration: none; /* Remove underline if it were a link */
+    appearance: none; /* Reset default browser button styles */
+    -webkit-appearance: none; /* For Safari */
+}
+
+/* Hover Effect */
+.ai-review-button:hover {
+    background-color: #0056b3; /* Darker blue on hover */
+    transform: translateY(-2px); /* Slight lift effect */
+}
+
+/* Active (Clicked) State */
+.ai-review-button:active {
+    background-color: #004085; /* Even darker blue when clicked */
+    transform: translateY(0); /* Return to original position */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); /* Deeper shadow on click */
+}
+
+/* Disabled State */
+.ai-review-button:disabled {
+    background-color: #cccccc; /* Greyed out when disabled */
+    color: #666666; /* Darker grey text */
+    cursor: not-allowed; /* Indicates it's not clickable */
+    box-shadow: none; /* No shadow when disabled */
+    transform: none; /* No transform when disabled */
+    opacity: 0.7; /* Slightly transparent */
+}
+
+/* Optional: Styling for the container if you want to center it */
+.ai-review-section-control {
+    text-align: center; /* Centers the button within its div */
+    padding: 20px 0; /* Add some vertical padding */
+}
