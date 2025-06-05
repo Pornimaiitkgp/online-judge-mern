@@ -32,7 +32,7 @@ export const aiCodeReview = async (code) => {
         // Try 'gemini-1.0-pro' first. If that fails, try 'models/text-bison-001'
         const model = genAI.getGenerativeModel({ model: "models/gemini-1.5-flash" }); 
 
-        const result = await model.generateContent(`Provide a detailed code review for the following code snippet. Identify any bugs, potential issues, areas for improvement (e.g., readability, efficiency), and suggest best practices.
+        const result = await model.generateContent(`Review the following C++ code. Provide only suggestions for improvement, potential bug fixes, best practices, and explain any issues found. DO NOT provide a corrected solution or rewrite the code. Focus strictly on reviewing the provided code.
 
 Code:
 \`\`\`

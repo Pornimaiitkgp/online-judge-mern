@@ -78,8 +78,8 @@ const MySubmissions = () => {
                             <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Language</th>
                             <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Status</th>
                             <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Test Cases</th>
-                            <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Time</th>
-                            <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Memory</th>
+                            {/* <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Time</th>
+                            <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Memory</th> */}
                             <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Submitted At</th>
                             <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Details</th>
                         </tr>
@@ -94,8 +94,8 @@ const MySubmissions = () => {
                                 <td style={{ border: '1px solid #ddd', padding: '8px' }}>{submission.language.toUpperCase()}</td>
                                 <td style={{ border: '1px solid #ddd', padding: '8px', color: getStatusColor(submission.status), fontWeight: 'bold' }}>{submission.status}</td>
                                 <td style={{ border: '1px solid #ddd', padding: '8px' }}>{submission.testCasesPassed}/{submission.totalTestCases}</td>
-                                <td style={{ border: '1px solid #ddd', padding: '8px' }}>{submission.executionTime ? `${submission.executionTime.toFixed(2)} ms` : 'N/A'}</td>
-                                <td style={{ border: '1px solid #ddd', padding: '8px' }}>{submission.memoryUsed ? `${submission.memoryUsed} KB` : 'N/A'}</td>
+                                {/* <td style={{ border: '1px solid #ddd', padding: '8px' }}>{submission.executionTime ? `${submission.executionTime.toFixed(2)} ms` : 'N/A'}</td>
+                                <td style={{ border: '1px solid #ddd', padding: '8px' }}>{submission.memoryUsed ? `${submission.memoryUsed} KB` : 'N/A'}</td> */}
                                 <td style={{ border: '1px solid #ddd', padding: '8px' }}>{new Date(submission.submittedAt).toLocaleString()}</td>
                                 <td style={{ border: '1px solid #ddd', padding: '8px' }}>
                                     {/* This link was confirmed to be correct based on your network tab */}

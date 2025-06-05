@@ -21,7 +21,9 @@ export default function Header() {
           </Link> */}
           
 
-          
+                              <a href="/problems">Problems</a> {/* This will navigate to /problems */}
+
+
 
           {/* NEW: Conditional Link for Create Problem (Admin Only) */}
           {currentUser && currentUser.isAdmin && (

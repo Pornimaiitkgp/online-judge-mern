@@ -388,8 +388,8 @@ const SubmissionResultPage = () => {
                     )}
                 </p>
                 <p><strong>Test Cases Passed:</strong> {submission.testCasesPassed} / {submission.totalTestCases}</p>
-                {submission.executionTime && <p><strong>Execution Time:</strong> {submission.executionTime} ms</p>}
-                {submission.memoryUsed && <p><strong>Memory Used:</strong> {submission.memoryUsed}</p>}
+                {/* {submission.executionTime && <p><strong>Execution Time:</strong> {submission.executionTime} ms</p>}
+                {submission.memoryUsed && <p><strong>Memory Used:</strong> {submission.memoryUsed}</p>} */}
 
                 {submission.code && (
                     <div className="output-section">
