@@ -1,0 +1,12 @@
+{
+  "code": "#include <iostream>\nint main() { std::cout << \"Hello, world!\"; return 0; }",
+  "language": "cpp",
+  "testCases": [
+    {
+      "input": "",
+      "expectedOutput": "Hello, world!"
+    }
+  ],
+  "timeLimit": 2000,
+  "memoryLimit": 256
+}
