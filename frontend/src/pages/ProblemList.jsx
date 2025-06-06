@@ -106,8 +106,8 @@ const ProblemList = () => {
                             </Link>
                         </h3>
                         <p><strong>Difficulty:</strong> {problem.difficulty}</p>
-                        <p><strong>Time Limit:</strong> {problem.timeLimit / 1000} seconds</p>
-                        <p><strong>Memory Limit:</strong> {problem.memoryLimit} MB</p>
+                        {/* <p><strong>Time Limit:</strong> {problem.timeLimit / 1000} seconds</p>
+                        <p><strong>Memory Limit:</strong> {problem.memoryLimit} MB</p> */}
 
                         {/* Admin buttons for Edit/Delete */}
                         {currentUser && currentUser.isAdmin && ( // Use currentUser for check
