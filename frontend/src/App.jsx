@@ -30,7 +30,9 @@ import CreateProblemPage from './pages/CreateProblem.jsx'; // Renamed local impo
 // Context & Axios Setup
 import { AuthProvider } from './context/AuthContext.jsx'; // IMPORTANT: Ensure your file is AuthContext.js
 import axios from 'axios';
-axios.defaults.baseURL = 'http://localhost:3000';
+// axios.defaults.baseURL = 'http://localhost:3000';
+axios.defaults.baseURL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
+
 
 
 function App() {
