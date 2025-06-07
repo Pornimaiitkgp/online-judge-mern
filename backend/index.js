@@ -38,9 +38,13 @@ mongoose.connect(process.env.MONGO)
 
 const app = express();
 
+const allowedOrigins = process.env.FRONTEND_URL?.split(',') || ['http://localhost:5173'];
+
+
 // --- CORRECTED: CORS Configuration (Only ONE instance, placed first) ---
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173', // Your frontend's exact URL
+  // origin: process.env.FRONTEND_URL || 'http://localhost:5173', 
+  origin: allowedOrigins,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Explicitly allow necessary methods, including OPTIONS for preflight
   credentials: true // Allow sending cookies and authorization headers
 }));
