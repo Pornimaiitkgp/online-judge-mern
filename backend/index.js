@@ -62,7 +62,10 @@ app.get('/', (req, res) => {
 });
 
 // --- Judge Proxy Endpoint ---
-const JUDGE_SERVER_URL = 'http://localhost:3001'; // Your Judge Server's URL
+// const JUDGE_SERVER_URL = 'http://localhost:3001'; // Your Judge Server's URL
+const JUDGE_SERVER_URL = process.env.JUDGE_SERVER_URL;
+
+
 
 app.post('/api/judge', async (req, res, next) => {
     const submissionData = req.body;
