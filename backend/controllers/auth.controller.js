@@ -40,6 +40,7 @@ export const signOutUser = (req, res) => {
 };
 
 export const google = async (req, res, next) => {
+  console.log('✅ Google Sign-In Request Received:', req.body);
     try {
         console.log('Google Signin Req Body:', req.body);
 
