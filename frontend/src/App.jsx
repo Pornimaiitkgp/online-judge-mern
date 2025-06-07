@@ -25,7 +25,7 @@ import SubmissionResultPage from './pages/SubmissionResultPage.jsx';
 
 // Admin Problem Management Pages
 import EditProblemPage from './pages/EditProblemPage.jsx';
-import CreateProblemPage from './pages/CreateProblem.jsx'; // Renamed local import for consistency
+import CreateProblemPage from './pages/CreateProblem.jsx'; // Renamed local import for consisteny
 
 // Context & Axios Setup
 import { AuthProvider } from './context/AuthContext.jsx'; // IMPORTANT: Ensure your file iss AuthContext.js
