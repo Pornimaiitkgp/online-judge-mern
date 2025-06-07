@@ -15,6 +15,8 @@ export default function OAuth() {
             const auth = getAuth(app);
 
             const result = await signInWithPopup(auth, provider);
+            console.log('Posting to:', `${import.meta.env.VITE_BACKEND_URL}/api/auth/google`);
+
 
             // Send user info to your backend's Google authentication route
             const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/auth/google`, {
