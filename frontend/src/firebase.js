@@ -8,7 +8,7 @@ const firebaseConfig = {
   apiKey:import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: "online-judge-e567c.firebaseapp.com",
   projectId: "online-judge-e567c",
-  storageBucket: "online-judge-e567c.firebasestorage.app",
+  storageBucket: "online-judge-e567c.appspot.com",
   messagingSenderId: "539689679295",
   appId: "1:539689679295:web:94f9630e1957b60283490a"
 };
