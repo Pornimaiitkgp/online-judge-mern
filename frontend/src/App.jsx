@@ -28,7 +28,7 @@ import EditProblemPage from './pages/EditProblemPage.jsx';
 import CreateProblemPage from './pages/CreateProblem.jsx'; // Renamed local import for consistency
 
 // Context & Axios Setup
-import { AuthProvider } from './context/AuthContext.jsx'; // IMPORTANT: Ensure your file is AuthContext.js
+import { AuthProvider } from './context/AuthContext.jsx'; // IMPORTANT: Ensure your file iss AuthContext.js
 import axios from 'axios';
 // axios.defaults.baseURL = 'http://localhost:3000';
 axios.defaults.baseURL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
