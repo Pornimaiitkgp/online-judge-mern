@@ -41,7 +41,7 @@ const app = express();
 const allowedOrigins = process.env.FRONTEND_URL?.split(',') || ['http://localhost:5173'];
 
 
-// --- CORRECTED: CORS Configuration (Only ONE instance, placed first) ---
+// --- CORRECTED: CORS Configuratin (Only ONE instance, placed first) ---
 app.use(cors({
   // origin: process.env.FRONTEND_URL || 'http://localhost:5173', 
   origin: allowedOrigins,
