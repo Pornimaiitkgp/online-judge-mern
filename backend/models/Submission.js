@@ -66,7 +66,7 @@ const submissionSchema = new mongoose.Schema({
         }],
         default: []
     }
-}, { timestamps: true }); // Automatically adds cretedAt and updatedAt
+}, { timestamps: true }); // Automaticaly adds cretedAt and updatedAt
 
 const Submission = mongoose.model('Submission', submissionSchema);
 export default Submission;
