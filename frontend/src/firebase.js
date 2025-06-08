@@ -6,12 +6,12 @@ import { initializeApp } from "firebase/app";
 // Your web app's Firebase configuration
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: "ojudge-fa3bc.firebaseapp.com",
-  projectId: "ojudge-fa3bc",
-  storageBucket: "ojudge-fa3bc.firebasestorage.app",
-  messagingSenderId: "756977177447",
-  appId: "1:756977177447:web:4d4a6adb74f51132ea95c2",
-  measurementId: "G-KYYMC4CQMJ"
+  authDomain: "algoquest-e0a04.firebaseapp.com",
+  projectId: "algoquest-e0a04",
+  storageBucket: "algoquest-e0a04.firebasestorage.app",
+  messagingSenderId: "1017749785628",
+  appId: "1:1017749785628:web:af73a25dc13b5fe370a3d9",
+  measurementId: "G-02FGR78HXD"
 };
 
 // Initialize Firebase
