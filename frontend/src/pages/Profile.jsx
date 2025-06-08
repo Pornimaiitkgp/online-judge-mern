@@ -112,8 +112,8 @@ export default function Profile() {
   try {
     dispatch(signOutUserStart());
 
-    const res = await fetch('/api/auth/signout', {
-      method: 'GET', // IMPORTANT: Your backend expects POST
+    const res = await fetch('https://oj-backend-ytrw.onrender.com/api/auth/signout', {
+      method: 'POST', // IMPORTANT: Your backend expects POST
       credentials: 'include', // Ensures cookies are sent
     });
 
