@@ -43,7 +43,7 @@ const allowedOrigins = [
   process.env.FRONTEND_URL,
   'ojudge-fa3bc.firebaseapp.com',
   'ojudge-fa3bc.web.app',
-  'https://oj-frontend-5101kik2s-pornima-gaikwads-projects.vercel.app'
+  'https://oj-frontend-o7q931nvu-pornima-gaikwads-projects.vercel.app'
 ];
 
 app.use(cors({
