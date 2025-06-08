@@ -42,7 +42,8 @@ const allowedOrigins = [
   'http://localhost:5173',
   process.env.FRONTEND_URL,
   'ojudge-fa3bc.firebaseapp.com',
-  'ojudge-fa3bc.web.app'
+  'ojudge-fa3bc.web.app',
+  'https://oj-frontend-ezqxqgg02-pornima-gaikwads-projects.vercel.app'
 ];
 
 app.use(cors({
