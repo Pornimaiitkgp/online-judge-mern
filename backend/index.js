@@ -40,10 +40,11 @@ const app = express();
 
 const allowedOrigins = [
   'http://localhost:5173',
-  process.env.FRONTEND_URL,
+  process.env.FRONTEND_URL.split(','),
   'ojudge-fa3bc.firebaseapp.com',
   'ojudge-fa3bc.web.app',
-  'https://oj-frontend-o7q931nvu-pornima-gaikwads-projects.vercel.app'
+  'https://oj-frontend-o7q931nvu-pornima-gaikwads-projects.vercel.app',
+  'https://oj-frontend-psi.vercel.app'
 ];
 
 app.use(cors({
