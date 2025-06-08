@@ -82,7 +82,7 @@ export const signOut = async (req, res, next) => {
   });
       res.status(200).json({ success: true, message: 'User has been logged out!' });
 
-    res.status(200).json('User has been logged out!');
+    
     } catch (error) {
     console.error('Sign out error:', error); // Log the specific error for debugging
     next(error); // Pass the error to your Express error handling middleware

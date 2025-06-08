@@ -113,7 +113,7 @@ export default function Profile() {
     dispatch(signOutUserStart());
 
     const res = await fetch('/api/auth/signout', {
-      method: 'POST', // IMPORTANT: Your backend expects POST
+      method: 'GET', // IMPORTANT: Your backend expects POST
       credentials: 'include', // Ensures cookies are sent
     });
 

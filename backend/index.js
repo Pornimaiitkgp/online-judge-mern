@@ -41,8 +41,8 @@ const app = express();
 const allowedOrigins = [
   'http://localhost:5173',
   process.env.FRONTEND_URL,
-  'https://online-judge-e567c.firebaseapp.com',
-  'https://online-judge-e567c.web.app'
+  'ojudge-fa3bc.firebaseapp.com',
+  'ojudge-fa3bc.web.app'
 ];
 
 app.use(cors({
