@@ -3,8 +3,7 @@ node_modules
 frontend/.env
 judge_server/.env
 keys
-/frontend/dist
-/frontend/build
+
 
 
 
