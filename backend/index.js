@@ -38,17 +38,17 @@ mongoose.connect(process.env.MONGO)
 
 const app = express();
 
-const allowedOrigins = process.env.FRONTEND_URL?.split(',') || ['http://localhost:5173'];
+const allowedOrigins = [
+  'http://localhost:5173',
+  process.env.FRONTEND_URL,
+  'https://online-judge-e567c.firebaseapp.com',
+  'https://online-judge-e567c.web.app'
+];
 
-
-// --- CORRECTED: CORS Configuratin (Only ONE instance, placed first) ---
 app.use(cors({
-  // origin: process.env.FRONTEND_URL || 'http://localhost:5173', 
   origin: allowedOrigins,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Explicitly allow necessary methods, including OPTIONS for preflight
-  credentials: true // Allow sending cookies and authorization headers
+  credentials: true
 }));
-// --- END CORRECTED: CORS Configuration ---
 
 app.use(express.json());
 app.use(cookieParser());
