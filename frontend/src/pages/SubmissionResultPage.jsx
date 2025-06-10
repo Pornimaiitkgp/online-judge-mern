@@ -86,7 +86,7 @@ const SubmissionResultPage = () => {
                 problemId: problemId, 
             };
 
-            const { data } = await axios.post('http://localhost:3000/ai-review', requestBody, config);
+            const { data } = await axios.post('/ai-review', requestBody, config);
 
             setAiReviewContent(data.result);
 
