@@ -68,14 +68,13 @@ app.use('/api/auth', authRouter);
 app.use('/api/user', userRouter);
 app.use('/api/problems', problemRoutes);
 app.use('/api/submissions', submissionRoutes);
-app.use('/api/ai', aiRoutes); // Ensure this route is correctly handled in your aiRoutes.js if needed separately
+app.use('/api/ai', aiRoutes); // Ensure this route is corectly handled in your aiRoutes.js if needed separately
 
 app.get('/', (req, res) => {
     res.send('API is running...');
 });
 
 // --- Judge Proxy Endpoint ---
-// const JUDGE_SERVER_URL = 'http://localhost:3001'; // Your Judge Server's URL
 const JUDGE_SERVER_URL = process.env.JUDGE_SERVER_URL;
 
 
