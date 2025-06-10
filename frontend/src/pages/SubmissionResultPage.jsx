@@ -38,7 +38,7 @@ const SubmissionResultPage = () => {
                     },
                     withCredentials: true
                 };
-                const response = await axios.get(`http://localhost:3000/api/submissions/${submissionId}`, config);
+                const response = await axios.get(`/api/submissions/${submissionId}`, config);
                 setSubmission(response.data);
                 console.log("Detailed Results received:", response.data.detailedResults);
             } catch (err) {
