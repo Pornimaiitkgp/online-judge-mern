@@ -43,7 +43,7 @@ const allowedOrigins = [
   process.env.FRONTEND_URL.split(','),
   'ojudge-fa3bc.firebaseapp.com',
   'ojudge-fa3bc.web.app',
-  'https://oj-frontend-o7q931nvu-pornima-gaikwads-projects.vercel.app',
+  'https://oj-frontend-elq0mxfsj-pornima-gaikwads-projects.vercel.app',
   'https://oj-frontend-psi.vercel.app'
 ];
 
