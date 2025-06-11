@@ -44,7 +44,7 @@ export default function SignIn() {
       } else {
 console.warn('SignIn handleSubmit: No token received from backend sign-in response. Check your backend auth.controller.js');      }
 
-      dispatch(signInSuccess(data.user)); 
+      dispatch(signInSuccess({...data.user,token: data.token})); 
       login(data.user, data.token); 
       navigate('/');
     } catch (error) {
