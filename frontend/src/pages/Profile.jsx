@@ -70,6 +70,7 @@ export default function Profile() {
     e.preventDefault();
     try {
       dispatch(updateUserStart());
+      const token = currentUser.token;
       const res = await fetch(`https://oj-backend-ytrw.onrender.com/api/user/update/${currentUser._id}`, {
         method: 'POST',
         headers: {
