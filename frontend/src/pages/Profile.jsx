@@ -74,6 +74,7 @@ export default function Profile() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${currentUser.token}`,
         },
         body: JSON.stringify(formData),
       });
